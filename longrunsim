@@ -1,0 +1,16 @@
+#!/bin/sh
+#usage runsim <Trace> <config>
+#Configs are
+# BASE 0
+# L12WAY 1
+# L22WAY 2
+# ALL2WAY 3
+# L12WAYL24WAY 4
+# L2BIG 5
+# ALLFA 6 
+echo using Trace $1
+echo using config $2
+echo using print $3
+
+#cat short-traces/$1 | Debug/CacheSimulatorCPP.exe $2 $3 1>out.txt
+zcat -d long-trace/$1 | Debug/CacheSimulatorCPP.exe $2 $3 1>Results/L/$1_config_$2.txt

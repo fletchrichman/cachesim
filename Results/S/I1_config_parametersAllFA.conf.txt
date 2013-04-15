@@ -1,0 +1,67 @@
+Using Base Config
+Creating the DM Cache
+NumBlocks:256
+NumIndexBits:8
+NumTagBits:19
+NumBitsWordInBlock:3
+Creating the DM Cache
+NumBlocks:256
+NumIndexBits:8
+NumTagBits:19
+NumBitsWordInBlock:3
+Creating the DM Cache
+NumBlocks:1024
+NumIndexBits:10
+NumTagBits:16
+NumBitsWordInBlock:4
+Status of printing: false
+--------------------------------------------------------------------------
+                         Simulation Results                               
+--------------------------------------------------------------------------
+Memory system:
+   Dcache size = 8192 : ways = 1 : block size = 32
+   Icache size = 8192 : ways = 1 : block size = 32
+   L2-cache size = 65536 : ways = 1 : block size = 64
+   Memory ready time = 50 : chunksize = 16 : chunktime = 20
+
+Execute time = 676     Total Refs = 13
+Instruction Refs = 9     Data Refs = 4
+
+Number of Instructions:     [Percentage]
+   Loads (L) = 3    [33.33%]   :   Stores (S) = 1    [11.11%]
+   Branch (B) = 3    [33.33%]   :   Computation (C) = 2    [22.22%]
+   Total = 9
+
+Cycles for Instructions:     [Percentage]
+   Loads (L) = 495    [73.22%]   :   Stores (S) = 165    [24.41%]
+   Branch (B) = 6    [0.89%]   :   Computation (C) = 10    [1.48%]
+   Total = 676
+
+Cycles per Instruction (CPI):
+   Loads (L) = 165.00      :   Stores (S) = 165.00
+   Branch (B) = 2.00     :   Computation (C) = 5.00
+   Overall = 75.11
+
+Cycles for processor w/perfect memory system 18
+Cycles for processor w/simulated memory system 676
+Ratio of simulated/perfect performance 37.555556
+
+Memory Level:   L1I
+   Hit Count = 8     Miss Count = 1   Total Request = 9
+   Hit Rate = 88.89%    Miss Rate = 11.11%
+   Kickouts : 0   Dirty Kickouts : 0  Transfers : 1
+
+Memory Level:   L1D
+   Hit Count = 1     Miss Count = 3   Total Request = 4
+   Hit Rate = 25.00%    Miss Rate = 75.00%
+   Kickouts : 1   Dirty Kickouts : 0  Transfers : 3
+
+Memory Level:   L2
+   Hit Count = 0     Miss Count = 4   Total Request = 4
+   Hit Rate = 0.00%    Miss Rate = 100.00%
+   Kickouts : 1   Dirty Kickouts : 0  Transfers : 4
+
+L1 cache cost (Icache $200) + (Dcache $200) = $400
+L2 cache cost = $50
+Memory cost = $275
+Total cost = $725

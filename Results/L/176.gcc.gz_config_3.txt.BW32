@@ -1,0 +1,53 @@
+Using All 2-way Config
+bw: 32memchunksize: 32
+Status of printing: false
+--------------------------------------------------------------------------
+                         Simulation Results                               
+--------------------------------------------------------------------------
+Memory system:
+   Dcache size = 8192 : ways = 2 : block size = 32
+   Icache size = 8192 : ways = 2 : block size = 32
+   L2-cache size = 65536 : ways = 2 : block size = 64
+   Memory ready time = 50 : chunksize = 32 : chunktime = 20
+
+Execute time = 8967739226     Total Refs = 2565131003
+Instruction Refs = 1892121367     Data Refs = 673009636
+
+Number of Instructions:     [Percentage]
+   Loads (L) = 440382918    [23.27%]   :   Stores (S) = 232626718    [12.29%]
+   Branch (B) = 333299155    [17.62%]   :   Computation (C) = 885812576    [46.82%]
+   Total = 1892121367
+
+Cycles for Instructions:     [Percentage]
+   Loads (L) = 3602629419    [40.17%]   :   Stores (S) = 1340022003    [14.94%]
+   Branch (B) = 1011838509    [11.28%]   :   Computation (C) = 3013249295    [33.60%]
+   Total = 8967739226
+
+Cycles per Instruction (CPI):
+   Loads (L) = 8.18      :   Stores (S) = 5.76
+   Branch (B) = 3.04     :   Computation (C) = 3.40
+   Overall = 4.74
+
+Cycles for processor w/perfect memory system 3784242734
+Cycles for processor w/simulated memory system 8967739226
+Ratio of simulated/perfect performance 2.369758
+
+Memory Level:   L1I
+   Hit Count = 1813870176     Miss Count = 78251191   Total Request = 1892121367
+   Hit Rate = 95.86%    Miss Rate = 4.14%
+   Kickouts : 78250935   Dirty Kickouts : 0  Transfers : 78251191
+
+Memory Level:   L1D
+   Hit Count = 629124993     Miss Count = 43884643   Total Request = 673009636
+   Hit Rate = 93.48%    Miss Rate = 6.52%
+   Kickouts : 43884387   Dirty Kickouts : 16377651  Transfers : 43884643
+
+Memory Level:   L2
+   Hit Count = 115493502     Miss Count = 23019983   Total Request = 138513485
+   Hit Rate = 83.38%    Miss Rate = 16.62%
+   Kickouts : 23018959   Dirty Kickouts : 4050267  Transfers : 23019983
+
+L1 cache cost (Icache $400) + (Dcache $400) = $800
+L2 cache cost = $100
+Memory cost = $375
+Total cost = $1275

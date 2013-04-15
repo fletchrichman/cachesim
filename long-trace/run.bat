@@ -1,0 +1,1 @@
+"C:\Program Files\7-Zip\7z" e -so gcc.gz | "..\Debug\CacheSimulatorCPP"

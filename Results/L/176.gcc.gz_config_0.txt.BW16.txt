@@ -1,0 +1,50 @@
+--------------------------------------------------------------------------
+                         Simulation Results                               
+--------------------------------------------------------------------------
+Memory system:
+   Dcache size = 8192 : ways = 1 : block size = 32
+   Icache size = 8192 : ways = 1 : block size = 32
+   L2-cache size = 65536 : ways = 1 : block size = 64
+   Memory ready time = 50 : chunksize = 16 : chunktime = 20
+
+Execute time = 12814773322     Total Refs = 2565131003
+Instruction Refs = 1892121367     Data Refs = 673009636
+
+Number of Instructions:     [Percentage]
+   Loads (L) = 440382918    [23.27%]   :   Stores (S) = 232626718    [12.29%]
+   Branch (B) = 333299155    [17.62%]   :   Computation (C) = 885812576    [46.82%]
+   Total = 1892121367
+
+Cycles for Instructions:     [Percentage]
+   Loads (L) = 5862985246    [45.75%]   :   Stores (S) = 1978197886    [15.44%]
+   Branch (B) = 1225466326    [9.56%]   :   Computation (C) = 3748123864    [29.25%]
+   Total = 12814773322
+
+Cycles per Instruction (CPI):
+   Loads (L) = 13.31      :   Stores (S) = 8.50
+   Branch (B) = 3.68     :   Computation (C) = 4.23
+   Overall = 6.77
+
+Cycles for processor w/perfect memory system 3784242734
+Cycles for processor w/simulated memory system 12814773322
+Ratio of simulated/perfect performance 3.386351
+
+Memory Level:   L1I
+   Hit Count = 1804702086     Miss Count = 87419281   Total Request = 1892121367
+   Hit Rate = 95.38%    Miss Rate = 4.62%
+   Kickouts : 87419025   Dirty Kickouts : 0  Transfers : 87419281
+
+Memory Level:   L1D
+   Hit Count = 609775533     Miss Count = 63234103   Total Request = 673009636
+   Hit Rate = 90.60%    Miss Rate = 9.40%
+   Kickouts : 63233847   Dirty Kickouts : 22825701  Transfers : 63234103
+
+Memory Level:   L2
+   Hit Count = 138176401     Miss Count = 35302684   Total Request = 173479085
+   Hit Rate = 79.65%    Miss Rate = 20.35%
+   Kickouts : 35301660   Dirty Kickouts : 6785857  Transfers : 35302684
+
+L1 cache cost (Icache $200) + (Dcache $200) = $400
+L2 cache cost = $50
+Memory cost = $275
+Total cost = $725

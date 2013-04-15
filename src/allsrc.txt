@@ -1,0 +1,1757 @@
+/*
+ * asscache.cpp
+ *
+ *  Created on: May 1, 2012
+ *      Author: Tim
+ */
+
+#include "asscache.h"
+
+#include <iostream>
+
+using namespace std;
+
+AssCache::AssCache(cacheLevel level, uint32 cacheSize, uint32 blockSize, uint32 assoc)
+		 :Cache(level)
+{
+	// Calculate number of sets
+	m_numSets = cacheSize / blockSize;
+	m_numSets /= assoc;
+
+	m_blockSize = blockSize;
+
+	m_numWays = assoc;
+
+	// Calculate number of index bits
+	uint32 temp = m_numSets;
+	m_numIndexBits= 0;
+	while (temp >>= 1)
+	{
+		m_numIndexBits++;
+	}
+
+	// Calculate number of bits deciding word in block
+	temp = m_blockSize / 4;
+	m_numBitsWordInBlock = 0;
+	while (temp >>= 1)
+	{
+		m_numBitsWordInBlock++;
+	}
+
+	// Calculate number of tag bits
+	m_numTagBits = WORD_SIZE - m_numIndexBits -
+							   m_numBitsByteInWord -
+							   m_numBitsWordInBlock;
+
+	m_cache = new AssCacheSet[m_numSets];
+	uint32 i;
+	for (i = 0; i < m_numSets; i++)
+	{
+		m_cache[i].Init(m_numWays);
+	}
+}
+
+uint32 AssCache::getTagFromReference(uint32 reference)
+{
+	return reference >> (WORD_SIZE - m_numTagBits);
+}
+
+uint32 AssCache::getIndexFromReference(uint32 reference)
+{
+	if (m_numIndexBits == 0)
+	{
+		return 0;
+	}
+	// Calculate index of reference
+	uint32 index = reference;
+	uint32 mask = 0xFFFFFFFF;
+	// Shift to right to get number of bits
+	mask >>= (WORD_SIZE - m_numIndexBits);
+	// Shift back into proper location compared to reference
+	mask <<= (m_numBitsWordInBlock + m_numBitsByteInWord);
+	index = (index & mask);
+	index >>= (m_numBitsWordInBlock + m_numBitsByteInWord);
+
+	return index;
+}
+
+Cache::checkRet AssCache::checkInCache(uint32 reference)
+{
+	uint32 tag = getTagFromReference(reference);
+	uint32 index = getIndexFromReference(reference);
+
+	bool found = false;
+	uint32 way;
+	for (way = 0; way < m_numWays; way++)
+	{
+		if (m_cache[index].getTag(way) == tag && m_cache[index].getValid(way))
+		{
+			found = true;
+			break;
+		}
+	}
+
+	if (found)
+	{
+		m_cache[index].updateLru(way);
+		return CR_HIT;
+	}
+	else
+	{
+		return CR_MISS;
+	}
+}
+
+Cache::eviction AssCache::checkAddRequiresEviction(uint32 reference)
+{
+	uint32 tag = getTagFromReference(reference);
+	uint32 index = getIndexFromReference(reference);
+
+	bool existsEmptyWay = false;
+	uint32 emptyWay;
+	for (emptyWay = 0; emptyWay < m_numWays; ++emptyWay)
+	{
+		if (!(m_cache[index].getValid(emptyWay)))
+		{
+			existsEmptyWay = true;
+			break;
+		}
+	}
+
+	if (existsEmptyWay)
+	{
+		return E_NOEVICT;
+	}
+	else
+	{
+		uint32 lruWay = m_cache[index].getLruWay();
+
+		bool dirty = m_cache[index].getDirty(lruWay);
+
+		if (dirty)
+		{
+			return E_DIRTY;
+		}
+		else
+		{
+			return E_CLEAN;
+		}
+	}
+}
+
+uint32 AssCache::getAddressToEvict(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+	uint32 tag = getTagFromReference(reference);
+
+	uint32 lruWay = m_cache[index].getLruWay();
+	uint32 evictTag = m_cache[index].getTag(lruWay);
+
+	return reconstructAddress(evictTag, index);
+}
+
+void AssCache::addToCache(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+	uint32 tag = getTagFromReference(reference);
+
+	bool existsEmptyWay = false;
+	uint32 emptyWay;
+	for (emptyWay = 0; emptyWay < m_numWays; ++emptyWay)
+	{
+		if (!(m_cache[index].getValid(emptyWay)))
+		{
+			existsEmptyWay = true;
+			break;
+		}
+	}
+
+	if (existsEmptyWay)
+	{
+		m_cache[index].setValid(emptyWay, true);
+		m_cache[index].setTag(emptyWay, tag);
+		m_cache[index].setDirty(emptyWay, false);
+
+		m_cache[index].updateLru(emptyWay);
+	}
+	else
+	{
+		uint32 lruWay = m_cache[index].getLruWay();
+
+		m_cache[index].setValid(lruWay, true);
+		m_cache[index].setTag(lruWay, tag);
+		m_cache[index].setDirty(lruWay, false);
+
+		m_cache[index].updateLru(lruWay);
+	}
+}
+
+void AssCache::write(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+	uint32 tag = getTagFromReference(reference);
+
+	uint32 i;
+	for (i = 0; i < m_numWays; ++i)
+	{
+		if (m_cache[index].getTag(i) == tag)
+		{
+			m_cache[index].setDirty(i, true);
+			m_cache[index].updateLru(i);
+		}
+	}
+}
+
+uint32 AssCache::reconstructAddress(uint32 tag, uint32 index)
+{
+	uint32 addr = (tag << (WORD_SIZE - m_numTagBits)) |
+				  (index << (m_numBitsWordInBlock + m_numBitsByteInWord));
+
+	return addr;
+}
+
+void AssCache::printCache()
+{
+	cout << "Memory Level: ";
+	switch (m_level)
+	{
+		case CL_L1I:
+			cout << "L1I";
+			break;
+		case CL_L1D:
+			cout << "L1D";
+			break;
+		case CL_L2:
+			cout << "L2";
+			break;
+	}
+	cout << endl;
+
+	cout << hex;
+
+	int i;
+	int j;
+	for (i = 0; i < m_numSets; ++i)
+	{
+		/*bool print = false;
+		for (j = 0; j < m_numWays; ++j)
+		{
+			if (m_cache[i].getValid(j))
+			{
+				print = true;
+			}
+		}
+
+		if (!print)
+		{
+			break;
+		}*/
+
+		cout << "Index: " << i<< " |";
+
+		for (j = 0; j < m_numWays; ++j)
+		{
+			cout << " V:" << m_cache[i].getValid(j)
+				 << " D:" << m_cache[i].getDirty(j)
+				 << " Tag:" << m_cache[i].getTag(j)
+				 << " |";
+		}
+
+		cout << endl;
+	}
+
+}
+
+
+
+
+/*
+ * asscacheset.cpp
+ *
+ *  Created on: May 1, 2012
+ *      Author: Tim
+ */
+
+#include "asscacheset.h"
+
+#include <stdlib.h>
+#include <iostream>
+
+using namespace std;
+
+AssCacheSet::AssCacheSet()
+{
+	// Empty on purpose, must call init to allocate arrays
+}
+
+void AssCacheSet::Init(uint32 numWays)
+{
+	// Create valid, dirty, and tag arrays
+	m_valids  = new bool[numWays]();
+	m_dirtys  = new bool[numWays]();
+	m_tags    = new uint32[numWays];
+
+	// Create the lru list nodes
+	m_lruNodeArray = new LruNode[numWays]();
+	// Link the lru list nodes
+	m_lruNodeArray[0].setPrev(NULL);
+	int i;
+	for (i = 0; i < numWays - 1; ++i)
+	{
+		m_lruNodeArray[i].setWay(i);
+
+		m_lruNodeArray[i].setNext(&m_lruNodeArray[i+1]);
+		m_lruNodeArray[i+1].setPrev(&m_lruNodeArray[i]);
+	}
+	m_lruNodeArray[numWays-1].setWay(numWays-1);
+	m_lruNodeArray[numWays-1].setNext(NULL);
+
+	// For now list is in order of creation
+	m_mostRuNode = &m_lruNodeArray[0];
+	m_leastRuNode = &m_lruNodeArray[numWays-1];
+}
+
+bool AssCacheSet::getValid(uint32 way)
+{
+	return m_valids[way];
+}
+
+void AssCacheSet::setValid(uint32 way, bool valid)
+{
+	m_valids[way] = valid;
+}
+
+bool AssCacheSet::getDirty(uint32 way)
+{
+	return m_dirtys[way];
+}
+
+void AssCacheSet::setDirty(uint32 way, bool dirty)
+{
+	m_dirtys[way] = dirty;
+}
+
+uint32 AssCacheSet::getTag(uint32 way)
+{
+	return m_tags[way];
+}
+
+void AssCacheSet::setTag(uint32 way, uint32 tag)
+{
+	m_tags[way] = tag;
+}
+
+uint32 AssCacheSet::getLruWay()
+{
+	return m_leastRuNode->getWay();
+}
+
+void AssCacheSet::updateLru(uint32 usedWay)
+{
+	if (usedWay != 0)
+	{
+		int x = 3;
+	}
+
+	LruNode* usedLruNode = &m_lruNodeArray[usedWay];
+
+	// If we just used the already MRU, nothing to do
+	if (usedLruNode == m_mostRuNode)
+	{
+		return;
+	}
+
+	// Get the nodes directly before and after the one node of the found access
+	LruNode* lruUsedNext = usedLruNode->getNext();
+	LruNode* lruUsedPrev = usedLruNode->getPrev();
+
+	// If used was LRU, LRU is now its previous
+	if (usedLruNode == m_leastRuNode)
+	{
+		m_leastRuNode = lruUsedPrev;
+	}
+
+	// Remove the used node from the list
+	if (lruUsedNext != NULL)
+	{
+		lruUsedNext->setPrev(lruUsedPrev);
+	}
+	lruUsedPrev->setNext(lruUsedNext);
+
+	// Insert used to front of list
+	m_mostRuNode->setPrev(usedLruNode);
+	usedLruNode->setNext(m_mostRuNode);
+	usedLruNode->setPrev(NULL);
+
+	// Used is now LRUs
+	m_mostRuNode = usedLruNode;
+}
+
+/*
+ * cache.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "cache.h"
+
+#include "dmcache.h"
+#include "asscache.h"
+
+Cache::Cache(cacheLevel level)
+     : m_level(level),
+	   m_numBitsByteInWord(2)
+{
+	// Empty on purpose
+}
+
+Cache::~Cache()
+{
+	// Empty on purpose
+}
+
+Cache* Cache::CreateCache(cacheLevel level, uint32 cacheSize, uint32 blockSize, uint32 assoc)
+{
+	if (assoc == 1)
+	{
+		return new DMCache(level, cacheSize, blockSize);
+	}
+	else
+	{
+		return new AssCache(level, cacheSize, blockSize, assoc);
+	}
+}
+
+
+
+/*
+ * config.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "config.h"
+
+#include <iostream>
+
+#include "INIReader.h"
+
+#define L1CACHESECTION "L1Cache"
+#define L2CACHESECTION "L2Cache"
+#define MAINMEMSECTION "MainMem"
+
+// L1 cache configuration variables
+uint32 L1_block_size;
+uint32 L1_cache_size;
+uint32 L1_assoc;
+uint32 L1_hit_time;
+uint32 L1_miss_time;
+
+// L2 cache configuration variables
+uint32 L2_block_size;
+uint32 L2_cache_size;
+uint32 L2_assoc;
+uint32 L2_hit_time;
+uint32 L2_miss_time;
+uint32 L2_transfer_time;
+uint32 L2_bus_width;
+
+// Main memory configuration values
+uint32 mem_sendaddr;
+uint32 mem_ready;
+uint32 mem_chunktime;
+uint32 mem_chunksize;
+
+using namespace std;
+
+bool Config::readConfigFile(string filename)
+{
+	INIReader reader(filename);
+
+	if (reader.ParseError() < 0)
+	{
+		cout << filename << endl;
+		return false;
+	}
+
+	// Read L1 config variables from file
+	L1_block_size = reader.GetInteger(L1CACHESECTION, "L1_block_size", 0);
+	L1_cache_size = reader.GetInteger(L1CACHESECTION, "L1_cache_size", 0);
+	L1_assoc = reader.GetInteger(L1CACHESECTION, "L1_assoc", 0);
+	L1_hit_time = reader.GetInteger(L1CACHESECTION, "L1_hit_time", 0);
+	L1_miss_time = reader.GetInteger(L1CACHESECTION, "L1_miss_time", 0);
+
+	// Read L2 config variables from file
+	L2_block_size = reader.GetInteger(L2CACHESECTION, "L2_block_size", 0);
+	L2_cache_size = reader.GetInteger(L2CACHESECTION, "L2_cache_size", 0);
+	L2_assoc = reader.GetInteger(L2CACHESECTION, "L2_assoc", 0);
+	L2_hit_time = reader.GetInteger(L2CACHESECTION, "L2_hit_time", 0);
+	L2_miss_time = reader.GetInteger(L2CACHESECTION, "L2_miss_time", 0);
+	L2_transfer_time = reader.GetInteger(L2CACHESECTION, "L2_transfer_time", 0);
+	L2_bus_width = reader.GetInteger(L2CACHESECTION, "L2_bus_width", 0);
+
+	// Read main mem config variables from file
+	mem_sendaddr = reader.GetInteger(MAINMEMSECTION, "mem_sendaddr", 0);
+	mem_ready = reader.GetInteger(MAINMEMSECTION, "mem_ready", 0);
+	mem_chunktime = reader.GetInteger(MAINMEMSECTION, "mem_chunktime", 0);
+	mem_chunksize = reader.GetInteger(MAINMEMSECTION, "mem_chunksize", 0);
+
+	return true;
+}
+#include "dmcache.h"
+
+#include <iostream>
+
+#define INDEXMASK 0xFFFFFFFF
+
+using namespace std;
+
+DMCache::DMCache(cacheLevel level, uint32 cacheSize, uint32 blockSize)
+		:Cache(level)
+{
+	cout << "Creating the DM Cache" << endl;
+
+	// Calculate number of clocks
+	m_numBlocks = cacheSize / blockSize;
+	m_blockSize = blockSize;
+
+	// Calculate number of index bits
+	int temp = m_numBlocks;
+	m_numIndexBits = 0;
+	while (temp >>= 1)
+	{
+		m_numIndexBits++;
+	}
+
+	// Calculate number bits deciding word in block
+	temp = m_blockSize;
+	m_numBitsWordInBlock = 0;
+	while(temp >>= 1)
+	{
+		m_numBitsWordInBlock++;
+	}
+
+	// Calculate number of tag bits
+	m_numTagBits = WORD_SIZE - m_numIndexBits - m_numBitsWordInBlock;
+
+	/*Set the number of Bits per word in block*/
+	m_numBitsWordInBlock -= 2;
+
+	cout << "NumBlocks:" << m_numBlocks << endl
+	     << "NumIndexBits:" << m_numIndexBits << endl
+	     << "NumTagBits:" << m_numTagBits << endl
+	     << "NumBitsWordInBlock:" << m_numBitsWordInBlock << endl;
+
+	m_cache = new DMCacheBlock[m_numBlocks];
+}
+
+uint32 DMCache::getTagFromReference(uint32 reference)
+{
+	// Calculate tag of reference
+	uint32 tag = reference;
+	tag = (tag >> (WORD_SIZE - m_numTagBits));
+
+	return tag;
+}
+
+uint32 DMCache::getIndexFromReference(uint32 reference)
+{
+	// Calculate index of reference
+	uint32 index = reference;
+	uint32 mask = INDEXMASK;
+	// Shift to right to get number of bits
+	mask >>= (WORD_SIZE - m_numIndexBits);
+	// Shift back into proper location compared to reference
+	mask <<= (m_numBitsWordInBlock + m_numBitsByteInWord);
+	index = (index & mask);
+	index >>= (m_numBitsWordInBlock + m_numBitsByteInWord);
+
+	return index;
+}
+
+Cache::checkRet DMCache::checkInCache(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+	uint32 tag = getTagFromReference(reference);
+
+	checkRet ret;
+
+	// See if reference is in cache
+	if (m_cache[index].GetTag() == tag && m_cache[index].GetValid())
+	{
+		ret = CR_HIT;
+	}
+	else
+	{
+		ret = CR_MISS;
+	}
+
+	return ret;
+}
+
+Cache::eviction DMCache::checkAddRequiresEviction(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+
+	// If block not yet valid, don't need to evict anything
+	if (!m_cache[index].GetValid())
+	{
+		return E_NOEVICT;
+	}
+	// Must evict, either dirty or clean
+	else
+	{
+		if (m_cache[index].GetDirty())
+		{
+			return E_DIRTY;
+		}
+		else
+		{
+			return E_CLEAN;
+		}
+
+	}
+}
+
+uint32 DMCache::getAddressToEvict(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+
+	uint32 evictTag = m_cache[index].GetTag();
+
+	return reconstructAddress(evictTag, index);
+}
+
+void DMCache::addToCache(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+	uint32 tag = getTagFromReference(reference);
+
+	m_cache[index].SetTag(tag);
+	m_cache[index].SetValid(true);
+	m_cache[index].SetDirty(false);
+}
+
+void DMCache::write(uint32 reference)
+{
+	uint32 index = getIndexFromReference(reference);
+	m_cache[index].SetDirty(true);
+}
+
+uint32 DMCache::reconstructAddress(uint32 tag, uint32 index)
+{
+	uint32 addr = (tag << (WORD_SIZE - m_numTagBits)) |
+				  (index << (m_numBitsWordInBlock + m_numBitsByteInWord));
+
+	return addr;
+}
+
+
+void DMCache::printCache()
+{
+
+}
+/*
+ * dmcacheblock.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "dmcacheblock.h"
+
+DMCacheBlock::DMCacheBlock(bool valid, bool dirty, uint32 tag)
+			 : m_valid(valid),
+			   m_dirty(dirty),
+			   m_tag(tag)
+{
+	// Empty on purpose
+}
+
+bool DMCacheBlock::GetValid()
+{
+	return m_valid;
+}
+
+void DMCacheBlock::SetValid(bool valid)
+{
+	m_valid = valid;
+}
+
+bool DMCacheBlock::GetDirty()
+{
+	return m_dirty;
+}
+
+void DMCacheBlock::SetDirty(bool dirty)
+{
+	m_dirty = dirty;
+}
+
+uint32 DMCacheBlock::GetTag()
+{
+	return m_tag;
+}
+
+void DMCacheBlock::SetTag(uint32 tag)
+{
+	m_tag = tag;
+}
+
+
+
+/*
+ * instruction.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "instruction.h"
+
+char Instruction::opcodeSymbol[] =
+{
+	'L',
+	'S',
+	'B',
+	'C'
+};
+
+Instruction::opcode Instruction::GetOpcode()
+{
+	return m_opcode;
+}
+
+void Instruction::SetOpcode(opcode op)
+{
+	m_opcode = op;
+}
+
+uint32 Instruction::GetPc()
+{
+	return m_pc;
+}
+
+void Instruction::SetPc(uint32 pc)
+{
+	m_pc = pc;
+}
+
+uint32 Instruction::GetExecInfo()
+{
+	switch (m_opcode)
+	{
+		case O_Load:
+		case O_Store:
+			return m_exInfo.ldstAddr;
+			break;
+		case O_Branch:
+			return 1;
+			break;
+		case O_Computation:
+			return m_exInfo.compLatency;
+			break;
+		default:
+			return m_exInfo.ldstAddr;
+			break;
+	}
+	return 0;
+}
+
+void Instruction::SetExecInfo(uint32 exInfo)
+{
+	switch (m_opcode)
+	{
+		case O_Load:
+		case O_Store:
+			m_exInfo.ldstAddr = exInfo;
+			break;
+		case O_Branch:
+			m_exInfo.brTaken = exInfo;
+			break;
+		case O_Computation:
+			m_exInfo.compLatency = exInfo;
+			break;
+		default:
+			break;
+	}
+}
+
+uint64 Instruction::GetInstrNum()
+{
+	return m_instrNum;
+}
+
+void Instruction::SetInstrNum(uint64 instrNum)
+{
+	m_instrNum = instrNum;
+}
+
+
+/*
+ * lrunode.cpp
+ *
+ *  Created on: May 1, 2012
+ *      Author: Tim
+ */
+
+#include "lrunode.h"
+
+LruNode::LruNode()
+{
+	// Empty on purpose
+}
+
+LruNode* LruNode::getNext()
+{
+	return m_next;
+}
+
+void LruNode::setNext(LruNode* next)
+{
+	m_next = next;
+}
+
+LruNode* LruNode::getPrev()
+{
+	return m_prev;
+}
+
+void LruNode::setPrev(LruNode* prev)
+{
+	m_prev = prev;
+}
+
+uint32 LruNode::getWay()
+{
+	return m_way;
+}
+
+void LruNode::setWay(uint32 way)
+{
+	m_way = way;
+}
+
+
+/*
+ * main.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include <iostream>
+
+#include "config.h"
+#include "cache.h"
+#include "trace.h"
+#include "results.h"
+#include "dmcache.h"
+#include "asscache.h"
+#include "simulator.h"
+
+#define BASE 0
+#define L12WAY 1
+#define L22WAY 2
+#define ALL2WAY 3
+#define L12WAYL24WAY 4
+#define L2BIG 5
+#define ALLFA 6
+
+#define INPUTTRACE "stdin"
+//#define INPUTTRACE "./long-trace/test.txt"
+inline const char * const BoolToString(bool b)
+{
+  return b ? "true" : "false";
+}
+extern bool printBool;
+int main(int argc, char **argv)
+{
+	int whichConfig=0;
+	uint64 tempTime=0;
+	whichConfig=atoi(argv[1]);
+	switch(whichConfig)
+	{
+		case BASE:
+			printf("Using Base Config\n");
+			Config::readConfigFile("./configs/parametersBase.conf");
+			break;
+		case L12WAY:
+			printf("Using L1 2-Way Config\n");
+			Config::readConfigFile("./configs/parametersL12.conf");
+			break;
+		case L22WAY:
+			printf("Using L2 2-Way Config\n");
+			Config::readConfigFile("./configs/parametersL22.conf");
+			break;
+		case ALL2WAY:
+			printf("Using All 2-way Config\n");
+			Config::readConfigFile("./configs/parametersAll2.conf");
+			break;
+		case L12WAYL24WAY:
+			printf("Using L12WAYL24WAY Config\n");
+			Config::readConfigFile("./configs/parametersL12L24.conf");
+			break;
+		case L2BIG:
+			printf("Using L2BIG Config\n");
+			Config::readConfigFile("./configs/parametersL2Big.conf");
+			break;
+		case ALLFA:
+			printf("Using ALL FA Config\n");
+			Config::readConfigFile("./configs/parametersAllFA.conf");
+			break;
+
+		default:
+			printf("Invalid Configuration File Number:%d\n",whichConfig);
+			break;
+	}
+/*
+	Cache* L1I = new DMCache(Cache::CL_L1I, L1_cache_size, L1_block_size);
+	Cache* L1D = new DMCache(Cache::CL_L1D, L1_cache_size, L1_block_size);
+
+	Cache* L2 = new DMCache(Cache::CL_L2, L2_cache_size, L2_block_size);
+	*/
+	Cache* L1I = Cache::CreateCache(Cache::CL_L1I, L1_cache_size, L1_block_size, L1_assoc);
+	Cache* L1D = Cache::CreateCache(Cache::CL_L1D, L1_cache_size, L1_block_size, L1_assoc);
+	Cache* L2 = Cache::CreateCache(Cache::CL_L2, L2_cache_size, L2_block_size, L2_assoc);
+
+	Trace::OpenTraceFile(INPUTTRACE);
+
+	Instruction* instr = new Instruction();
+	Results* results = new Results();
+	if (argc < 2)
+	{
+		printBool=false;
+	}
+	else if(argv[2] != NULL)
+	{
+		if (atoi(argv[2]) == 1) printBool=true;
+	}
+
+	printf("Status of printing: %s\n",BoolToString(printBool));
+
+	while (Trace::GetInstruction(instr, results) == 0)
+	{
+		tempTime=results->GetExecTime();
+		if(printBool == true) Trace::PrintInstruction(instr);
+		Simulator::HandleInstruction(instr, L1I, L1D, L2, results);
+		tempTime=results->GetExecTime()-tempTime;
+		results->AddCycleCount(instr->GetOpcode(),tempTime);
+		if(printBool == true) printf("Simulated Time = %llu\n",results->GetExecTime());
+	}
+
+	results->PrintResults();
+
+	//L1I->printCache();
+
+	return 0;
+}
+
+/*
+ * results.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "results.h"
+
+#include <iostream>
+#include <stdio.h>
+
+#include "config.h"
+#define CPRINT
+#ifdef CPRINT
+#define PRINT(format,...) if(printBool) printf(format,##__VA_ARGS__)
+#else
+#define PRINT(format,...)
+#endif
+using namespace std;
+bool printBool=false;
+Results::Results()
+		: m_numTotal(0), m_numLoad(0), m_numBranch(0), m_numStore(0), m_numComp(0),
+		  m_cycleTotal(0), m_cycleLoad(0), m_cycleBranch(0), m_cycleStore(0), m_cycleComp(0),
+		  m_execTime(0),
+		  m_instRefs(0), m_dataRefs(0)
+{
+	// Empty on purpose
+	for(int ii=0;ii<Cache::CL_NUMLEVELS;ii++)
+	{
+		  m_hitCount[ii]=0;
+		  m_missCount[ii]=0;
+		  m_accessTotal[ii]=0;
+		  m_kickouts[ii]=0;
+		  m_dirtyKickouts[ii]=0;
+		  m_transfers[ii]=0;
+	}
+}
+
+void Results::PrintResults()
+{
+	printf("--------------------------------------------------------------------------\n");
+	printf("                         Simulation Results                               \n");
+	printf("--------------------------------------------------------------------------\n");
+
+	/*Print out Memory System Configuration*/
+	printf("Memory system:\n");
+	printf("   Dcache size = %u : ways = %u : block size = %u\n", L1_cache_size, L1_assoc, L1_block_size);
+	printf("   Icache size = %u : ways = %u : block size = %u\n", L1_cache_size, L1_assoc, L1_block_size);
+	printf("   L2-cache size = %u : ways = %u : block size = %u\n", L2_cache_size, L2_assoc, L2_block_size);
+	printf("   Memory ready time = %u : chunksize = %u : chunktime = %u\n\n", mem_ready, mem_chunksize, mem_chunktime);
+
+	/*Print out Exec time and Refs information*/
+	printf("Execute time = %llu     Total Refs = %llu\n",
+					m_execTime,
+					(m_dataRefs+m_instRefs));
+	printf("Instruction Refs = %llu     Data Refs = %llu\n",
+							m_instRefs,
+							m_dataRefs);
+
+	printf("\n");
+
+	/*Print out Number of Instructions and Percentage*/
+	printf("Number of Instructions:     [Percentage]\n");
+	printf("   Loads (L) = %llu    [%2.2f%%]   :   Stores (S) = %llu    [%2.2f%%]\n",
+					m_numLoad,
+					(float)(m_numLoad*100.0/(float)m_numTotal),
+					m_numStore,
+					(float)(m_numStore*100.0/(float)m_numTotal));
+	printf("   Branch (B) = %llu    [%2.2f%%]   :   Computation (C) = %llu    [%2.2f%%]\n",
+							m_numBranch,
+							(m_numBranch*100.0/(float)m_numTotal),
+							m_numComp,
+							(m_numComp*100.0/(float)m_numTotal));
+	printf("   Total = %llu\n",m_numTotal);
+
+	printf("\n");
+
+	/*Print out Cycles time and Refs information*/
+	printf("Cycles for Instructions:     [Percentage]\n");
+	printf("   Loads (L) = %llu    [%2.2f%%]   :   Stores (S) = %llu    [%2.2f%%]\n",
+					m_cycleLoad,
+					(float)(m_cycleLoad*100.0/(float)m_cycleTotal),
+					m_cycleStore,
+					(float)(m_cycleStore*100.0/(float)m_cycleTotal));
+	printf("   Branch (B) = %llu    [%2.2f%%]   :   Computation (C) = %llu    [%2.2f%%]\n",
+							m_cycleBranch,
+							(m_cycleBranch*100.0/(float)m_cycleTotal),
+							m_cycleComp,
+							(m_cycleComp*100.0/(float)m_cycleTotal));
+	printf("   Total = %llu\n",m_cycleTotal);
+
+	printf("\n");
+
+	/*Print out CPI information*/
+	printf("Cycles per Instruction (CPI):\n");
+	printf("   Loads (L) = %2.2f      :   Stores (S) = %2.2f\n",
+					(float)(m_cycleLoad / (float)m_numLoad),
+					(float)(m_cycleStore / (float)m_numStore));
+	printf("   Branch (B) = %2.2f     :   Computation (C) = %2.2f\n",
+			(float)(m_cycleBranch / (float)m_numBranch),
+			(float)(m_cycleComp / (float)m_numComp));
+	printf("   Overall = %2.2f\n",(float)(m_cycleTotal/ (float)m_numTotal));
+
+	printf("\n");
+
+	/*Print out Ideal Vs  Simulated*/
+	printf("Cycles for processor w/perfect memory system %llu\n",2*m_instRefs);
+	printf("Cycles for processor w/simulated memory system %llu\n",m_execTime);
+	printf("Ratio of simulated/perfect performance %f\n",(float)(m_execTime/(float)(2*m_instRefs)));
+
+	printf("\n");
+
+	/*Print out memory level L1I*/
+	printf("Memory Level:   L1I\n");
+	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",
+			m_hitCount[Cache::CL_L1I],
+			m_missCount[Cache::CL_L1I],
+			m_accessTotal[Cache::CL_L1I]);
+	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",
+			(float)(m_hitCount[Cache::CL_L1I]*100/(float)m_accessTotal[Cache::CL_L1I]),
+			(float)(m_missCount[Cache::CL_L1I]*100/(float)m_accessTotal[Cache::CL_L1I]));
+	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",
+			m_kickouts[Cache::CL_L1I],
+			m_dirtyKickouts[Cache::CL_L1I],
+			m_transfers[Cache::CL_L1I]);
+
+	printf("\n");
+
+	/*Print out memory level L1D*/
+	printf("Memory Level:   L1D\n");
+	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",
+			m_hitCount[Cache::CL_L1D],
+			m_missCount[Cache::CL_L1D],
+			m_accessTotal[Cache::CL_L1D]);
+	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",
+			(float)(m_hitCount[Cache::CL_L1D]*100/(float)m_accessTotal[Cache::CL_L1D]),
+			(float)(m_missCount[Cache::CL_L1D]*100/(float)m_accessTotal[Cache::CL_L1D]));
+	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",
+			m_kickouts[Cache::CL_L1D],
+			m_dirtyKickouts[Cache::CL_L1D],
+			m_transfers[Cache::CL_L1D]);
+
+	printf("\n");
+
+	/*Print out memory level L2*/
+	printf("Memory Level:   L2\n");
+	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",
+			m_hitCount[Cache::CL_L2],
+			m_missCount[Cache::CL_L2],
+			m_accessTotal[Cache::CL_L2]);
+	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",
+			(float)(m_hitCount[Cache::CL_L2]*100/(float)m_accessTotal[Cache::CL_L2]),
+			(float)(m_missCount[Cache::CL_L2]*100/(float)m_accessTotal[Cache::CL_L2]));
+	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",
+			m_kickouts[Cache::CL_L2],
+			m_dirtyKickouts[Cache::CL_L2],
+			m_transfers[Cache::CL_L2]);
+
+	printf("\n");
+
+/*Print Cache Cost Information*/
+	uint32 numAssocDoubles=0;
+	uint64 L1Cost=0;
+	uint64 L2Cost=0;
+	uint64 totalCost=0;
+
+	/*Calculate L1 Cost*/
+	while(L1_assoc>>=1) numAssocDoubles++;
+	L1Cost=(L1_cache_size/(4*1024))*(100+(100*numAssocDoubles));
+	totalCost+=2*L1Cost;
+
+	/*Calculate L2 Cost*/
+	numAssocDoubles=0;
+	while(L2_assoc>>=1) numAssocDoubles++;
+	L2Cost=(L2_cache_size/(64*1024))*(50+(50*numAssocDoubles));
+	totalCost+=L2Cost;
+
+	/*Calculate memory cost*/
+	uint32 latencyDouble=0;
+	uint32 bandwidthDouble=0;
+	uint64 temp;
+	uint64 memCost=0;
+	temp=100/mem_ready;
+	while(temp>>=1) latencyDouble++;
+	temp=mem_chunksize/16;
+	while(temp>>=1) bandwidthDouble++;
+	memCost=latencyDouble*200+bandwidthDouble*100+75;
+	totalCost+=memCost;
+
+	printf("L1 cache cost (Icache $%llu) + (Dcache $%llu) = $%llu\n",L1Cost,L1Cost,2*L1Cost);
+	printf("L2 cache cost = $%llu\n",L2Cost);
+	printf("Memory cost = $%llu\n",memCost);
+	printf("Total cost = $%llu\n",totalCost);
+
+/*
+	// L1I Cache Summary
+	cout << endl << endl
+		 << "Memory Level: L1I" << endl
+		 << "\tHit Count = " << m_hitCount[Cache::CL_L1I]
+		 << "\tMiss Count = " << m_missCount[Cache::CL_L1I]
+	     << "\tTotal Request = " << m_accessTotal[Cache::CL_L1I] << endl;
+	cout.setf(std::ios::fixed);
+	cout.precision(1);
+	double hitrate = 100 * (double) m_hitCount[Cache::CL_L1I] / (double) m_accessTotal[Cache::CL_L1I];
+	double missrate = 100 * (double) m_missCount[Cache::CL_L1I] / (double) m_accessTotal[Cache::CL_L1I];
+	cout << "\tHit Rate = " << hitrate << "%"
+		 << "\tMiss Rate = " << missrate << "%" << endl
+		 << "\tKickouts = " << m_kickouts[Cache::CL_L1I]
+		 << "\tDirty Kickouts = " << m_dirtyKickouts[Cache::CL_L1I]
+		 << "\tTransfers = " << m_transfers[Cache::CL_L1I];
+
+	// L1D Cache Summary
+	cout << endl << endl
+		 << "Memory Level: L1D" << endl
+		 << "\tHit Count = " << m_hitCount[Cache::CL_L1D]
+		 << "\tMiss Count = " << m_missCount[Cache::CL_L1D]
+		 << "\tTotal Request = " << m_accessTotal[Cache::CL_L1D] << endl;
+	cout.setf(std::ios::fixed);
+	cout.precision(1);
+	hitrate = 100 * (double) m_hitCount[Cache::CL_L1D] / (double) m_accessTotal[Cache::CL_L1D];
+	missrate = 100 * (double) m_missCount[Cache::CL_L1D] / (double) m_accessTotal[Cache::CL_L1D];
+	cout << "\tHit Rate = " << hitrate << "%"
+		 << "\tMiss Rate = " << missrate << "%" << endl
+		 << "\tKickouts = " << m_kickouts[Cache::CL_L1D]
+		 << "\tDirty Kickouts = " << m_dirtyKickouts[Cache::CL_L1D]
+		 << "\tTransfers = " << m_transfers[Cache::CL_L1D];
+
+	// L2 Cache Summary
+	cout << endl << endl
+		 << "Memory Level: L2" << endl
+		 << "\tHit Count = " << m_hitCount[Cache::CL_L2]
+		 << "\tMiss Count = " << m_missCount[Cache::CL_L2]
+		 << "\tTotal Request = " << m_accessTotal[Cache::CL_L2] << endl;
+	cout.setf(std::ios::fixed);
+	cout.precision(1);
+	hitrate = 100 * (double) m_hitCount[Cache::CL_L2] / (double) m_accessTotal[Cache::CL_L2];
+	missrate = 100 * (double) m_missCount[Cache::CL_L2] / (double) m_accessTotal[Cache::CL_L2];
+	cout << "\tHit Rate = " << hitrate << "%"
+		 << "\tMiss Rate = " << missrate << "%" << endl
+		 << "\tKickouts = " << m_kickouts[Cache::CL_L2]
+		 << "\tDirty Kickouts = " << m_dirtyKickouts[Cache::CL_L2]
+		 << "\tTransfers = " << m_transfers[Cache::CL_L2];
+	*/
+
+}
+
+void Results::ParsedInstruction(Instruction::opcode opcode)
+{
+	m_numTotal++;
+	m_instRefs++;
+
+	switch(opcode)
+	{
+		case Instruction::O_Load:
+			m_numLoad++;
+			m_dataRefs++;
+			break;
+		case Instruction::O_Store:
+			m_numStore++;
+			m_dataRefs++;
+			break;
+		case Instruction::O_Branch:
+			m_numBranch++;
+			break;
+		case Instruction::O_Computation:
+			m_numComp++;
+			break;
+		default:
+			break;
+	}
+}
+
+void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle)
+{
+	m_cycleTotal+=cycle;
+
+	switch(opcode)
+	{
+		case Instruction::O_Load:
+			m_cycleLoad+=cycle;
+			break;
+		case Instruction::O_Store:
+			m_cycleStore+=cycle;
+			break;
+		case Instruction::O_Branch:
+			m_cycleBranch+=cycle;
+			break;
+		case Instruction::O_Computation:
+			m_cycleComp+=cycle;
+			break;
+		default:
+			break;
+	}
+}
+
+void Results::InstructionRef(Cache::checkRet L1Hit,
+							 Cache::eviction L1Evict,
+						 	 Cache::checkRet L2Hit,
+						     Cache::eviction L2Evict)
+{
+	m_accessTotal[Cache::CL_L1I]++;
+
+	if (L1Hit == Cache::CR_HIT)
+	{
+		PRINT("Add L1i hit time (+%d)\n",L1_hit_time);
+		m_execTime += L1_hit_time;
+		m_hitCount[Cache::CL_L1I]++;
+	}
+	else if (L1Hit == Cache::CR_MISS)
+	{
+		PRINT("Add L1i miss time (+%d)\n",L1_miss_time);
+		m_execTime += L1_miss_time;
+
+		m_missCount[Cache::CL_L1I]++;
+		m_transfers[Cache::CL_L1I]++;
+
+		if (L1Evict == Cache::E_CLEAN)
+		{
+			m_kickouts[Cache::CL_L1I]++;
+		}
+
+		m_accessTotal[Cache::CL_L2]++;
+
+		if (L2Hit == Cache::CR_HIT)
+		{
+			PRINT("Add L2 hit time (+%d)\n",L2_hit_time);
+			m_execTime += L2_hit_time;
+
+			// Time for xfer from L2 to L1
+			PRINT("Bringing line into L1i.\n");
+			PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
+			m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
+
+			//Replay of L1
+			PRINT("Add L1i hit replay time (+%d)\n",L1_hit_time);
+			m_execTime += L1_hit_time;
+
+			m_hitCount[Cache::CL_L2]++;
+		}
+		else if (L2Hit == Cache::CR_MISS)
+		{
+			//L2 Miss time
+			PRINT("Add L2 miss time (+%d)\n",L2_miss_time);
+			m_execTime += L2_miss_time;
+
+			// Time for xfer from main mem to L2
+			PRINT("Bringing line into L2.\n");
+			PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
+			m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
+
+			/*Replay time*/
+			PRINT("Add L2 hit replay time (+%d)\n",L2_hit_time);
+			m_execTime += L2_hit_time;
+
+			//Transfer from l2 to l1
+			PRINT("Bringing line into L1i.\n");
+			PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
+			m_execTime += ((L1_block_size / L2_bus_width) * L2_transfer_time);
+
+			/*Replay time*/
+			PRINT("Add L1i hit replay time (+%d)\n",L1_hit_time);
+			m_execTime += L1_hit_time;
+
+			m_missCount[Cache::CL_L2]++;
+			m_transfers[Cache::CL_L2]++;
+
+			if (L2Evict == Cache::E_CLEAN)
+			{
+				m_kickouts[Cache::CL_L2]++;
+			}
+			else if (L2Evict == Cache::E_DIRTY)
+			{
+				m_kickouts[Cache::CL_L2]++;
+				m_dirtyKickouts[Cache::CL_L2]++;
+
+				// Time for xfer from main L2 to main mem
+				PRINT("Bringing line into L2.\n");
+				PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
+				m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
+			}
+		}
+	}
+}
+
+void Results::L1DEvict(Cache::eviction L1DEvict)
+{
+	if (L1DEvict == Cache::E_CLEAN)
+	{
+		m_kickouts[Cache::CL_L1D]++;
+	}
+	else if (L1DEvict == Cache::E_DIRTY)
+	{
+		m_kickouts[Cache::CL_L1D]++;
+		m_dirtyKickouts[Cache::CL_L1D]++;
+		// Time for xfer from L1 to L2
+		PRINT("Bringing line into L1d.\n");
+		PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
+		m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
+
+	}
+}
+
+void Results::L2Evict(Cache::eviction L2Evict)
+{
+	if (L2Evict == Cache::E_CLEAN)
+	{
+		m_kickouts[Cache::CL_L2]++;
+	}
+	else if (L2Evict == Cache::E_DIRTY)
+	{
+		m_kickouts[Cache::CL_L2]++;
+		m_dirtyKickouts[Cache::CL_L2]++;
+		// Time for xfer from L2 to main mem
+		PRINT("Bringing line into L2.\n");
+		PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
+		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
+	}
+}
+
+void Results::L1DRef(Cache::checkRet L1DHit)
+{
+	m_accessTotal[Cache::CL_L1D]++;
+
+	if (L1DHit == Cache::CR_HIT)
+	{
+		PRINT("Add L1d hit time (+%d)\n",L1_hit_time);
+		m_execTime += L1_hit_time;
+		m_hitCount[Cache::CL_L1D]++;
+	}
+	else
+	{
+		PRINT("Add L1d miss time (+%d)\n",L1_miss_time);
+		m_execTime += L1_miss_time;
+		// Time for xfer from L2 to L1
+		PRINT("Bringing line into L1d.\n");
+		PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
+		m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
+
+		/*Replay time*/
+		PRINT("Add L1d hit replay time (+%d)\n",L1_hit_time);
+		m_execTime += L1_hit_time;
+
+		m_missCount[Cache::CL_L1D]++;
+		m_transfers[Cache::CL_L1D]++;
+	}
+}
+
+void Results::L2Ref(Cache::checkRet L2Hit)
+{
+	m_accessTotal[Cache::CL_L2]++;
+
+	if (L2Hit == Cache::CR_HIT)
+	{
+		PRINT("Add L2 hit time (+%d)\n",L2_hit_time);
+		m_execTime += L2_hit_time;
+		m_hitCount[Cache::CL_L2]++;
+	}
+	else
+	{
+		PRINT("Add L2 miss time (+%d)\n",L2_miss_time);
+		m_execTime += L2_miss_time;
+
+		// Time for xfer from main mem to L2
+		PRINT("Bringing line into L2.\n");
+		PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
+		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
+
+		//Replay time
+		PRINT("Add L2 hit replay time (+%d)\n",L2_hit_time);
+		m_execTime += L2_hit_time;
+		m_missCount[Cache::CL_L2]++;
+		m_transfers[Cache::CL_L2]++;
+	}
+}
+void Results::AddExecInfoTime(uint32 execTime)
+{
+	m_execTime += execTime;
+}
+uint64 Results::GetExecTime()
+{
+	return m_execTime;
+}
+
+
+
+
+/*
+ * simulator.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "simulator.h"
+
+#include <iostream>
+
+#undef DEBUG
+#ifdef DEBUG
+#define PRINTACTION(output) (cout << output)
+#else
+#define PRINTACTION(output)
+#endif
+//#define CPRINT
+#ifdef CPRINT
+#define PRINT(format,...) printf(format,##__VA_ARGS__)
+#else
+#define PRINT(format,...)
+#endif
+
+
+using namespace std;
+
+void Simulator::HandleInstruction(Instruction* instr,
+								  Cache* L1I,
+								  Cache* L1D,
+								  Cache* L2,
+								  Results* results)
+{
+	// =======================
+	// BEGIN INSTRUCTION FETCH
+	// =======================
+
+	uint32 pc = instr->GetPc();
+
+	// Look for instruction in L1 cache
+	Cache::checkRet instrHitL1 = L1I->checkInCache(pc);
+
+	Cache::checkRet instrHitL2;
+	Cache::eviction instrEvictL1;
+	Cache::eviction instrEvictL2;
+
+	if (instrHitL1 == Cache::CR_MISS)
+	{
+		PRINTACTION(endl << "L1I Miss");
+
+		// See whether we will have to evict from L1
+		instrEvictL1 = L1I->checkAddRequiresEviction(pc);
+
+		// If dirty evict, need to write it back
+		/*if (instrEvictL1 == Cache::E_DIRTY)
+		{
+			// This will never happen in the instruction cache
+		}*/
+
+		// Instruction not in L1 cache, look in L2
+		instrHitL2 = L2->checkInCache(pc);
+
+		if (instrHitL2 == Cache::CR_MISS)
+		{
+			PRINTACTION(endl << "L2 Miss");
+
+			// See whether we will have to evict from L2
+			instrEvictL2 = L2->checkAddRequiresEviction(pc);
+
+			L2->addToCache(pc);
+		}
+		else
+		{
+			PRINTACTION(endl << "L2 Hit");
+		}
+
+		L1I->addToCache(pc);
+	}
+	else
+	{
+		PRINTACTION(endl << "L1I Hit");
+	}
+
+	results->InstructionRef(instrHitL1, instrEvictL1, instrHitL2, instrEvictL2);
+
+	// =====================
+	// END INSTRUCTION FETCH
+	// =====================
+
+
+	switch(instr->GetOpcode())
+	{
+		case Instruction::O_Load:
+		case Instruction::O_Store:
+		{
+			PRINTACTION(endl << "-------");
+
+			// =====================
+			// BEGIN DATA FETCH
+			// =====================
+
+			uint32 addr = instr->GetExecInfo();
+
+			// Look for instruction in L1 cache
+			Cache::checkRet dataHitL1 = L1D->checkInCache(addr);
+
+			Cache::checkRet dataHitL2;
+			Cache::eviction dataEvictL1;
+			Cache::eviction dataEvictL2;
+			Cache::checkRet dataWriteBackHitL2;
+
+			if (dataHitL1 == Cache::CR_MISS)
+			{
+				PRINTACTION(endl << "L1D Miss");
+
+				// See whether we will have to evict from L1
+				dataEvictL1 = L1D->checkAddRequiresEviction(addr);
+
+				// If dirty evict, need to write it back
+				if (dataEvictL1 == Cache::E_DIRTY)
+				{
+					uint32 evictAddrL1 = L1D->getAddressToEvict(addr);
+
+					dataWriteBackHitL2 = L2->checkInCache(evictAddrL1);
+
+					// If addr evicted from L1 is found in L2, just need to potentially write to it
+					if (dataWriteBackHitL2 == Cache::CR_HIT)
+					{
+						L2->write(evictAddrL1);
+					}
+					// If it wasn't in L2, need to handle that
+					else
+					{
+						// Check if we also need to evict from L2
+						dataEvictL2 = L2->checkAddRequiresEviction(evictAddrL1);
+
+						if (dataEvictL2 != Cache::E_NOEVICT)
+						{
+							results->L2Evict(dataEvictL2);
+
+							if (dataEvictL2 != Cache::E_DIRTY)
+							{
+								PRINTACTION(endl << "Dirty writeback from L2");
+							}
+						}
+
+						// Need to add it to L2 cache, then we can write
+						L2->addToCache(evictAddrL1);
+						L2->write(evictAddrL1);
+					}
+
+					results->L2Ref(dataWriteBackHitL2);
+
+					PRINTACTION(endl << "Dirty writeback from L1D");
+					results->L1DEvict(dataEvictL1);
+				}
+				else if (dataEvictL1 == Cache::E_CLEAN)
+				{
+					results->L1DEvict(dataEvictL1);
+				}
+
+				// Instruction not in L1 cache, look in L2
+				dataHitL2 = L2->checkInCache(addr);
+
+				if (dataHitL2 == Cache::CR_MISS)
+				{
+					PRINTACTION(endl << "L2 Miss");
+
+					// See whether we will have to evict from L2
+					dataEvictL2 = L2->checkAddRequiresEviction(addr);
+
+					if (dataEvictL2 != Cache::E_NOEVICT)
+					{
+						results->L2Evict(dataEvictL2);
+					}
+
+					L2->addToCache(addr);
+				}
+				else
+				{
+					PRINTACTION(endl << "L2 Hit");
+				}
+
+				results->L2Ref(dataHitL2);
+
+				L1D->addToCache(addr);
+			}
+			else
+			{
+				PRINTACTION(endl << "L1D Hit");
+			}
+
+			if (instr->GetOpcode() == Instruction::O_Store)
+			{
+				L1D->write(addr);
+			}
+
+			results->L1DRef(dataHitL1);
+
+			break;
+		}
+		// =====================
+		// END DATA FETCH
+		// =====================
+		case Instruction::O_Branch:
+		case Instruction::O_Computation:
+		{
+			PRINT("Add exec time (+%d)\n",1);
+			results->AddExecInfoTime(instr->GetExecInfo());
+			break;
+		}
+		default:
+			break;
+
+	}
+	PRINTACTION(endl << "------------------------------------------------------");
+}
+
+
+
+/*
+ * trace.cpp
+ *
+ *  Created on: Apr 23, 2012
+ *      Author: Tim
+ */
+
+#include "trace.h"
+#include "config.h"
+
+#include <stdlib.h>
+#include <iostream>
+#include <string.h>
+
+#ifdef USE_STD_IN
+#define READ_ACTION(...) scanf(__VA_ARGS__)
+#else
+#define READ_ACTION(...) fscanf(m_traceFile, __VA_ARGS__)
+#endif
+
+FILE* Trace::m_traceFile = NULL;
+uint64 Trace::m_instrNum = 0;
+
+using namespace std;
+
+int Trace::OpenTraceFile(string filename)
+{
+	if(strcmp(filename.c_str(),"stdin")==0)
+	{
+		m_traceFile=stdin;
+	}
+	// Open the file, store it in file variable
+	else
+	{
+		if((m_traceFile = fopen(filename.c_str(), "r")) == NULL)
+		{
+			return 1;
+		}
+	}
+	m_instrNum = 0;
+
+	return 0;
+}
+
+int Trace::GetInstruction(Instruction* instr, Results* results)
+{
+	char opType;
+	uint32 pc;
+	// Get operation type and program counter while checking for end of file
+	if (READ_ACTION("%c %8x", &opType, &pc) == EOF)
+	{
+		return -1;
+	}
+
+	instr->SetPc(pc);
+
+	uint32 exInfo;
+
+	// Need to parse execution info differently for each operation type
+	switch (opType)
+	{
+		case 'L':
+			// Parse the address of load
+			instr->SetOpcode(Instruction::O_Load);
+			break;
+		case 'S':
+			// Parse the address of save
+			instr->SetOpcode(Instruction::O_Store);
+			break;
+		case 'B':
+			// Parse the 0/1 of whether branch is taken
+			instr->SetOpcode(Instruction::O_Branch);
+			break;
+		case 'C':
+			// Parse the number of clock ticks computation takes
+			instr->SetOpcode(Instruction::O_Computation);
+			break;
+		default:
+			instr->SetOpcode(Instruction::O_InvalidValue);
+			break;
+	}
+
+	READ_ACTION("%8x ", &exInfo);
+	instr->SetExecInfo(exInfo);
+	instr->SetInstrNum(m_instrNum);
+	m_instrNum++;
+
+	results->ParsedInstruction(instr->GetOpcode());
+
+	return 0;
+}
+
+void Trace::PrintInstruction(Instruction* instr)
+{
+	cout << endl << "Instruction " << instr->GetInstrNum()
+		 << ": Opcode = " << Instruction::opcodeSymbol[instr->GetOpcode()]
+		 << ", ExecInfo = " << instr->GetExecInfo()<<endl;
+}
+
