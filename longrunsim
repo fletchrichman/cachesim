@@ -13,4 +13,4 @@ echo using config $2
 echo using print $3
 
 #cat short-traces/$1 | Debug/CacheSimulatorCPP.exe $2 $3 1>out.txt
-zcat -d long-trace/$1 | Debug/CacheSimulatorCPP.exe $2 $3 1>Results/L/$1_config_$2.txt
+zcat -d long-trace/$1 | Debug/CacheSim $2 $3 1>Results_New/L/$1_config_$2.txt

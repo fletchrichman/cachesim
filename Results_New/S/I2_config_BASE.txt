@@ -63,5 +63,21 @@ Memory Level:   L2
 
 L1 cache cost (Icache $200) + (Dcache $200) = $400
 L2 cache cost = $50
-Memory cost = $275
-Total cost = $725
+Memory cost = $75
+Total cost = $525
+
+
+Memory Level: L1I
+	Hit Count = 12	Miss Count = 4	Total Request = 16
+	Hit Rate = 75.0%	Miss Rate = 25.0%
+	Kickouts = 2	Dirty Kickouts = 0	Transfers = 4
+
+Memory Level: L1D
+	Hit Count = 1	Miss Count = 3	Total Request = 4
+	Hit Rate = 25.0%	Miss Rate = 75.0%
+	Kickouts = 1	Dirty Kickouts = 0	Transfers = 3
+
+Memory Level: L2
+	Hit Count = 0	Miss Count = 7	Total Request = 7
+	Hit Rate = 0.0%	Miss Rate = 100.0%
+	Kickouts = 3	Dirty Kickouts = 0	Transfers = 7

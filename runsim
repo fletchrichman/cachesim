@@ -12,4 +12,4 @@ echo using Trace $1
 echo using config $2
 echo using print $3
 
-cat short-traces/$1 | Debug/CacheSim.exe $2 $3 1>Results_New/S/$1_config_$2.txt
+cat short-traces/$1 | Debug/CacheSim $2 $3 1>Results_New/S/$1_config_$2.txt

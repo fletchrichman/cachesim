@@ -193,7 +193,7 @@ void Results::PrintResults()
 	printf("Memory cost = $%llu\n",memCost);
 	printf("Total cost = $%llu\n",totalCost);
 
-/*
+
 	// L1I Cache Summary
 	cout << endl << endl
 		 << "Memory Level: L1I" << endl
@@ -241,7 +241,7 @@ void Results::PrintResults()
 		 << "\tKickouts = " << m_kickouts[Cache::CL_L2]
 		 << "\tDirty Kickouts = " << m_dirtyKickouts[Cache::CL_L2]
 		 << "\tTransfers = " << m_transfers[Cache::CL_L2];
-	*/
+	
 
 }
 
