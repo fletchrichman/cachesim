@@ -182,9 +182,9 @@ void Results::PrintResults()
 	uint64 temp;
 	uint64 memCost=0;
 	temp=100/mem_ready;
-	while(temp>>=1) latencyDouble++;
+	//while(temp>>=1) latencyDouble++;
 	temp=mem_chunksize/16;
-	while(temp>>=1) bandwidthDouble++;
+	//while(temp>>=1) bandwidthDouble++;
 	memCost=latencyDouble*200+bandwidthDouble*100+75;
 	totalCost+=memCost;
 
