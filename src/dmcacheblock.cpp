@@ -1,47 +1,33 @@
-/*
- * dmcacheblock.cpp
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
+//Direct Mapped Cache Block: Simple functionality for DM Cache blocks
 #include "dmcacheblock.h"
 
 DMCacheBlock::DMCacheBlock(bool valid, bool dirty, uint32 tag)
 			 : m_valid(valid),
 			   m_dirty(dirty),
-			   m_tag(tag)
-{
-	// Empty on purpose
-}
+			   m_tag(tag){
+}																		
 
-bool DMCacheBlock::GetValid()
-{
+bool DMCacheBlock::GetValid(){
 	return m_valid;
 }
 
-void DMCacheBlock::SetValid(bool valid)
-{
+void DMCacheBlock::SetValid(bool valid){
 	m_valid = valid;
 }
 
-bool DMCacheBlock::GetDirty()
-{
+bool DMCacheBlock::GetDirty(){
 	return m_dirty;
 }
 
-void DMCacheBlock::SetDirty(bool dirty)
-{
+void DMCacheBlock::SetDirty(bool dirty){
 	m_dirty = dirty;
 }
 
-uint32 DMCacheBlock::GetTag()
-{
+uint32 DMCacheBlock::GetTag(){
 	return m_tag;
 }
 
-void DMCacheBlock::SetTag(uint32 tag)
-{
+void DMCacheBlock::SetTag(uint32 tag){
 	m_tag = tag;
 }
 

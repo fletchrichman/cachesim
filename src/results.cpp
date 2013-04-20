@@ -1,22 +1,16 @@
-/*
- * results.cpp
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
+//Calculate costs and other results, write everything to output file
 #include "results.h"
-
-#include <iostream>
-#include <stdio.h>
-
 #include "config.h"
+#include <stdio.h>
+#include <iostream>
+
 #define CPRINT
 #ifdef CPRINT
 #define PRINT(format,...) if(printBool) printf(format,##__VA_ARGS__)
 #else
 #define PRINT(format,...)
 #endif
+
 using namespace std;
 bool printBool=false;
 Results::Results()
@@ -25,169 +19,108 @@ Results::Results()
 		  m_execTime(0),
 		  m_instRefs(0), m_dataRefs(0)
 {
-	// Empty on purpose
-	for(int ii=0;ii<Cache::CL_NUMLEVELS;ii++)
-	{
-		  m_hitCount[ii]=0;
-		  m_missCount[ii]=0;
-		  m_accessTotal[ii]=0;
-		  m_kickouts[ii]=0;
-		  m_dirtyKickouts[ii]=0;
-		  m_transfers[ii]=0;
+	for(int ii=0;ii<Cache::CL_NUMLEVELS;ii++){
+		m_transfers[ii]=0;
+		m_accessTotal[ii]=0;
+		m_hitCount[ii]=0;
+		m_missCount[ii]=0;
+		m_kickouts[ii]=0;
+		m_dirtyKickouts[ii]=0;  
 	}
 }
 
-void Results::PrintResults()
-{
-	printf("--------------------------------------------------------------------------\n");
+void Results::PrintResults(){
 	printf("                         Simulation Results                               \n");
 	printf("--------------------------------------------------------------------------\n");
 
-	/*Print out Memory System Configuration*/
+	//Memory Config
 	printf("Memory system:\n");
 	printf("   Dcache size = %u : ways = %u : block size = %u\n", L1_cache_size, L1_assoc, L1_block_size);
 	printf("   Icache size = %u : ways = %u : block size = %u\n", L1_cache_size, L1_assoc, L1_block_size);
 	printf("   L2-cache size = %u : ways = %u : block size = %u\n", L2_cache_size, L2_assoc, L2_block_size);
 	printf("   Memory ready time = %u : chunksize = %u : chunktime = %u\n\n", mem_ready, mem_chunksize, mem_chunktime);
 
-	/*Print out Exec time and Refs information*/
-	printf("Execute time = %llu     Total Refs = %llu\n",
-					m_execTime,
-					(m_dataRefs+m_instRefs));
-	printf("Instruction Refs = %llu     Data Refs = %llu\n",
-							m_instRefs,
-							m_dataRefs);
-
+	//Execution Time and References
+	printf("Execute time = %llu     Total Refs = %llu\n",m_execTime,(m_dataRefs+m_instRefs));
+	printf("Instruction Refs = %llu     Data Refs = %llu\n",m_instRefs,m_dataRefs);
 	printf("\n");
 
-	/*Print out Number of Instructions and Percentage*/
+	//Number of Instructions and Percentages
 	printf("Number of Instructions:     [Percentage]\n");
-	printf("   Loads (L) = %llu    [%2.2f%%]   :   Stores (S) = %llu    [%2.2f%%]\n",
-					m_numLoad,
-					(float)(m_numLoad*100.0/(float)m_numTotal),
-					m_numStore,
-					(float)(m_numStore*100.0/(float)m_numTotal));
-	printf("   Branch (B) = %llu    [%2.2f%%]   :   Computation (C) = %llu    [%2.2f%%]\n",
-							m_numBranch,
-							(m_numBranch*100.0/(float)m_numTotal),
-							m_numComp,
-							(m_numComp*100.0/(float)m_numTotal));
+	printf("   Loads (L) = %llu    [%2.2f%%]   :   Stores (S) = %llu    [%2.2f%%]\n",m_numLoad,(float)(m_numLoad*100.0/(float)m_numTotal),m_numStore,(float)(m_numStore*100.0/(float)m_numTotal));
+	printf("   Branch (B) = %llu    [%2.2f%%]   :   Computation (C) = %llu    [%2.2f%%]\n",m_numBranch,(m_numBranch*100.0/(float)m_numTotal),m_numComp,(m_numComp*100.0/(float)m_numTotal));
 	printf("   Total = %llu\n",m_numTotal);
-
 	printf("\n");
 
-	/*Print out Cycles time and Refs information*/
+	//Cycles Time and Referencess Info
 	printf("Cycles for Instructions:     [Percentage]\n");
-	printf("   Loads (L) = %llu    [%2.2f%%]   :   Stores (S) = %llu    [%2.2f%%]\n",
-					m_cycleLoad,
-					(float)(m_cycleLoad*100.0/(float)m_cycleTotal),
-					m_cycleStore,
-					(float)(m_cycleStore*100.0/(float)m_cycleTotal));
-	printf("   Branch (B) = %llu    [%2.2f%%]   :   Computation (C) = %llu    [%2.2f%%]\n",
-							m_cycleBranch,
-							(m_cycleBranch*100.0/(float)m_cycleTotal),
-							m_cycleComp,
-							(m_cycleComp*100.0/(float)m_cycleTotal));
+	printf("   Loads (L) = %llu    [%2.2f%%]   :   Stores (S) = %llu    [%2.2f%%]\n",m_cycleLoad,(float)(m_cycleLoad*100.0/(float)m_cycleTotal),m_cycleStore,(float)(m_cycleStore*100.0/(float)m_cycleTotal));
+	printf("   Branch (B) = %llu    [%2.2f%%]   :   Computation (C) = %llu    [%2.2f%%]\n",m_cycleBranch,(m_cycleBranch*100.0/(float)m_cycleTotal),m_cycleComp,(m_cycleComp*100.0/(float)m_cycleTotal));
 	printf("   Total = %llu\n",m_cycleTotal);
-
 	printf("\n");
 
-	/*Print out CPI information*/
+	//Instruction types & CPI
 	printf("Cycles per Instruction (CPI):\n");
-	printf("   Loads (L) = %2.2f      :   Stores (S) = %2.2f\n",
-					(float)(m_cycleLoad / (float)m_numLoad),
-					(float)(m_cycleStore / (float)m_numStore));
-	printf("   Branch (B) = %2.2f     :   Computation (C) = %2.2f\n",
-			(float)(m_cycleBranch / (float)m_numBranch),
-			(float)(m_cycleComp / (float)m_numComp));
+	printf("   Loads (L) = %2.2f      :   Stores (S) = %2.2f\n",(float)(m_cycleLoad / (float)m_numLoad),(float)(m_cycleStore / (float)m_numStore));
+	printf("   Branch (B) = %2.2f     :   Computation (C) = %2.2f\n",(float)(m_cycleBranch / (float)m_numBranch),(float)(m_cycleComp / (float)m_numComp));
 	printf("   Overall = %2.2f\n",(float)(m_cycleTotal/ (float)m_numTotal));
-
 	printf("\n");
 
-	/*Print out Ideal Vs  Simulated*/
+	//Ideal vs Simulated
 	printf("Cycles for processor w/perfect memory system %llu\n",2*m_instRefs);
 	printf("Cycles for processor w/simulated memory system %llu\n",m_execTime);
 	printf("Ratio of simulated/perfect performance %f\n",(float)(m_execTime/(float)(2*m_instRefs)));
-
 	printf("\n");
 
-	/*Print out memory level L1I*/
+	//L1I
 	printf("Memory Level:   L1I\n");
-	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",
-			m_hitCount[Cache::CL_L1I],
-			m_missCount[Cache::CL_L1I],
-			m_accessTotal[Cache::CL_L1I]);
-	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",
-			(float)(m_hitCount[Cache::CL_L1I]*100/(float)m_accessTotal[Cache::CL_L1I]),
-			(float)(m_missCount[Cache::CL_L1I]*100/(float)m_accessTotal[Cache::CL_L1I]));
-	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",
-			m_kickouts[Cache::CL_L1I],
-			m_dirtyKickouts[Cache::CL_L1I],
-			m_transfers[Cache::CL_L1I]);
-
+	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",m_hitCount[Cache::CL_L1I],m_missCount[Cache::CL_L1I],m_accessTotal[Cache::CL_L1I]);
+	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",(float)(m_hitCount[Cache::CL_L1I]*100/(float)m_accessTotal[Cache::CL_L1I]),(float)(m_missCount[Cache::CL_L1I]*100/(float)m_accessTotal[Cache::CL_L1I]));
+	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",m_kickouts[Cache::CL_L1I],m_dirtyKickouts[Cache::CL_L1I],m_transfers[Cache::CL_L1I]);
 	printf("\n");
 
-	/*Print out memory level L1D*/
+	//L1D
 	printf("Memory Level:   L1D\n");
-	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",
-			m_hitCount[Cache::CL_L1D],
-			m_missCount[Cache::CL_L1D],
-			m_accessTotal[Cache::CL_L1D]);
-	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",
-			(float)(m_hitCount[Cache::CL_L1D]*100/(float)m_accessTotal[Cache::CL_L1D]),
-			(float)(m_missCount[Cache::CL_L1D]*100/(float)m_accessTotal[Cache::CL_L1D]));
-	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",
-			m_kickouts[Cache::CL_L1D],
-			m_dirtyKickouts[Cache::CL_L1D],
-			m_transfers[Cache::CL_L1D]);
-
+	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",m_hitCount[Cache::CL_L1D],m_missCount[Cache::CL_L1D],m_accessTotal[Cache::CL_L1D]);
+	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",(float)(m_hitCount[Cache::CL_L1D]*100/(float)m_accessTotal[Cache::CL_L1D]),(float)(m_missCount[Cache::CL_L1D]*100/(float)m_accessTotal[Cache::CL_L1D]));
+	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",m_kickouts[Cache::CL_L1D],m_dirtyKickouts[Cache::CL_L1D],m_transfers[Cache::CL_L1D]);
 	printf("\n");
 
-	/*Print out memory level L2*/
+	//L2
 	printf("Memory Level:   L2\n");
-	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",
-			m_hitCount[Cache::CL_L2],
-			m_missCount[Cache::CL_L2],
-			m_accessTotal[Cache::CL_L2]);
-	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",
-			(float)(m_hitCount[Cache::CL_L2]*100/(float)m_accessTotal[Cache::CL_L2]),
-			(float)(m_missCount[Cache::CL_L2]*100/(float)m_accessTotal[Cache::CL_L2]));
-	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",
-			m_kickouts[Cache::CL_L2],
-			m_dirtyKickouts[Cache::CL_L2],
-			m_transfers[Cache::CL_L2]);
-
+	printf("   Hit Count = %llu     Miss Count = %llu   Total Request = %llu\n",m_hitCount[Cache::CL_L2],m_missCount[Cache::CL_L2],m_accessTotal[Cache::CL_L2]);
+	printf("   Hit Rate = %2.2f%%    Miss Rate = %2.2f%%\n",(float)(m_hitCount[Cache::CL_L2]*100/(float)m_accessTotal[Cache::CL_L2]),(float)(m_missCount[Cache::CL_L2]*100/(float)m_accessTotal[Cache::CL_L2]));
+	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",m_kickouts[Cache::CL_L2],m_dirtyKickouts[Cache::CL_L2],m_transfers[Cache::CL_L2]);
 	printf("\n");
 
-/*Print Cache Cost Information*/
+	//Initialize cost variables and calculate costs
 	uint32 numAssocDoubles=0;
 	uint64 L1Cost=0;
 	uint64 L2Cost=0;
 	uint64 totalCost=0;
-
-	/*Calculate L1 Cost*/
+	
+	//L1 Costs
 	while(L1_assoc>>=1) numAssocDoubles++;
 	L1Cost=(L1_cache_size/(4*1024))*(100+(100*numAssocDoubles));
 	totalCost+=2*L1Cost;
-
-	/*Calculate L2 Cost*/
+	
+	//L2 Costs
 	numAssocDoubles=0;
 	while(L2_assoc>>=1) numAssocDoubles++;
 	L2Cost=(L2_cache_size/(64*1024))*(50+(50*numAssocDoubles));
 	totalCost+=L2Cost;
-
-	/*Calculate memory cost*/
+	
+	//Memory Cost
 	uint32 latencyDouble=0;
 	uint32 bandwidthDouble=0;
 	uint64 temp;
 	uint64 memCost=0;
 	temp=100/mem_ready;
-	//while(temp>>=1) latencyDouble++;
 	temp=mem_chunksize/16;
-	//while(temp>>=1) bandwidthDouble++;
 	memCost=latencyDouble*200+bandwidthDouble*100+75;
 	totalCost+=memCost;
-
+	
+	//Print Costs
 	printf("L1 cache cost (Icache $%llu) + (Dcache $%llu) = $%llu\n",L1Cost,L1Cost,2*L1Cost);
 	printf("L2 cache cost = $%llu\n",L2Cost);
 	printf("Memory cost = $%llu\n",memCost);
@@ -245,13 +178,10 @@ void Results::PrintResults()
 
 }
 
-void Results::ParsedInstruction(Instruction::opcode opcode)
-{
+void Results::ParsedInstruction(Instruction::opcode opcode){
 	m_numTotal++;
 	m_instRefs++;
-
-	switch(opcode)
-	{
+	switch(opcode){
 		case Instruction::O_Load:
 			m_numLoad++;
 			m_dataRefs++;
@@ -271,12 +201,9 @@ void Results::ParsedInstruction(Instruction::opcode opcode)
 	}
 }
 
-void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle)
-{
+void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle){
 	m_cycleTotal+=cycle;
-
-	switch(opcode)
-	{
+	switch(opcode){
 		case Instruction::O_Load:
 			m_cycleLoad+=cycle;
 			break;
@@ -294,40 +221,25 @@ void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle)
 	}
 }
 
-void Results::InstructionRef(Cache::checkRet L1Hit,
-							 Cache::eviction L1Evict,
-						 	 Cache::checkRet L2Hit,
-						     Cache::eviction L2Evict)
-{
+void Results::InstructionRef(Cache::checkRet L1Hit,Cache::eviction L1Evict,Cache::checkRet L2Hit,Cache::eviction L2Evict){
 	m_accessTotal[Cache::CL_L1I]++;
-
-	if (L1Hit == Cache::CR_HIT)
-	{
+	if (L1Hit == Cache::CR_HIT){
 		PRINT("Add L1i hit time (+%d)\n",L1_hit_time);
 		m_execTime += L1_hit_time;
 		m_hitCount[Cache::CL_L1I]++;
 	}
-	else if (L1Hit == Cache::CR_MISS)
-	{
+	else if (L1Hit == Cache::CR_MISS){
 		PRINT("Add L1i miss time (+%d)\n",L1_miss_time);
 		m_execTime += L1_miss_time;
-
 		m_missCount[Cache::CL_L1I]++;
 		m_transfers[Cache::CL_L1I]++;
-
-		if (L1Evict == Cache::E_CLEAN)
-		{
-			m_kickouts[Cache::CL_L1I]++;
-		}
-
+		if (L1Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L1I]++;
 		m_accessTotal[Cache::CL_L2]++;
-
-		if (L2Hit == Cache::CR_HIT)
-		{
+		if (L2Hit == Cache::CR_HIT){
 			PRINT("Add L2 hit time (+%d)\n",L2_hit_time);
 			m_execTime += L2_hit_time;
 
-			// Time for xfer from L2 to L1
+			//Transfer time L2-->L1
 			PRINT("Bringing line into L1i.\n");
 			PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 			m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
@@ -338,18 +250,17 @@ void Results::InstructionRef(Cache::checkRet L1Hit,
 
 			m_hitCount[Cache::CL_L2]++;
 		}
-		else if (L2Hit == Cache::CR_MISS)
-		{
+		else if (L2Hit == Cache::CR_MISS){
 			//L2 Miss time
 			PRINT("Add L2 miss time (+%d)\n",L2_miss_time);
 			m_execTime += L2_miss_time;
 
-			// Time for xfer from main mem to L2
+			//Transfer Time L2-->Memory
 			PRINT("Bringing line into L2.\n");
 			PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 			m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
 
-			/*Replay time*/
+			//Replay of L2
 			PRINT("Add L2 hit replay time (+%d)\n",L2_hit_time);
 			m_execTime += L2_hit_time;
 
@@ -358,23 +269,18 @@ void Results::InstructionRef(Cache::checkRet L1Hit,
 			PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 			m_execTime += ((L1_block_size / L2_bus_width) * L2_transfer_time);
 
-			/*Replay time*/
+			//Replay Time L2
 			PRINT("Add L1i hit replay time (+%d)\n",L1_hit_time);
 			m_execTime += L1_hit_time;
 
 			m_missCount[Cache::CL_L2]++;
 			m_transfers[Cache::CL_L2]++;
 
-			if (L2Evict == Cache::E_CLEAN)
-			{
-				m_kickouts[Cache::CL_L2]++;
-			}
-			else if (L2Evict == Cache::E_DIRTY)
-			{
+			if (L2Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L2]++;
+			else if (L2Evict == Cache::E_DIRTY){
 				m_kickouts[Cache::CL_L2]++;
 				m_dirtyKickouts[Cache::CL_L2]++;
 
-				// Time for xfer from main L2 to main mem
 				PRINT("Bringing line into L2.\n");
 				PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 				m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
@@ -383,17 +289,11 @@ void Results::InstructionRef(Cache::checkRet L1Hit,
 	}
 }
 
-void Results::L1DEvict(Cache::eviction L1DEvict)
-{
-	if (L1DEvict == Cache::E_CLEAN)
-	{
-		m_kickouts[Cache::CL_L1D]++;
-	}
-	else if (L1DEvict == Cache::E_DIRTY)
-	{
+void Results::L1DEvict(Cache::eviction L1DEvict){
+	if (L1DEvict == Cache::E_CLEAN) m_kickouts[Cache::CL_L1D]++;
+	else if (L1DEvict == Cache::E_DIRTY){
 		m_kickouts[Cache::CL_L1D]++;
 		m_dirtyKickouts[Cache::CL_L1D]++;
-		// Time for xfer from L1 to L2
 		PRINT("Bringing line into L1d.\n");
 		PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 		m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
@@ -401,43 +301,31 @@ void Results::L1DEvict(Cache::eviction L1DEvict)
 	}
 }
 
-void Results::L2Evict(Cache::eviction L2Evict)
-{
-	if (L2Evict == Cache::E_CLEAN)
-	{
-		m_kickouts[Cache::CL_L2]++;
-	}
-	else if (L2Evict == Cache::E_DIRTY)
-	{
+void Results::L2Evict(Cache::eviction L2Evict){
+	if (L2Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L2]++;
+	else if (L2Evict == Cache::E_DIRTY){
 		m_kickouts[Cache::CL_L2]++;
 		m_dirtyKickouts[Cache::CL_L2]++;
-		// Time for xfer from L2 to main mem
 		PRINT("Bringing line into L2.\n");
 		PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
 	}
 }
 
-void Results::L1DRef(Cache::checkRet L1DHit)
-{
+void Results::L1DRef(Cache::checkRet L1DHit){
 	m_accessTotal[Cache::CL_L1D]++;
-
-	if (L1DHit == Cache::CR_HIT)
-	{
+	if (L1DHit == Cache::CR_HIT){
 		PRINT("Add L1d hit time (+%d)\n",L1_hit_time);
 		m_execTime += L1_hit_time;
 		m_hitCount[Cache::CL_L1D]++;
 	}
-	else
-	{
+	else {
 		PRINT("Add L1d miss time (+%d)\n",L1_miss_time);
 		m_execTime += L1_miss_time;
-		// Time for xfer from L2 to L1
 		PRINT("Bringing line into L1d.\n");
 		PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 		m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
 
-		/*Replay time*/
 		PRINT("Add L1d hit replay time (+%d)\n",L1_hit_time);
 		m_execTime += L1_hit_time;
 
@@ -446,42 +334,30 @@ void Results::L1DRef(Cache::checkRet L1DHit)
 	}
 }
 
-void Results::L2Ref(Cache::checkRet L2Hit)
-{
+void Results::L2Ref(Cache::checkRet L2Hit){
 	m_accessTotal[Cache::CL_L2]++;
-
-	if (L2Hit == Cache::CR_HIT)
-	{
+	if (L2Hit == Cache::CR_HIT){
 		PRINT("Add L2 hit time (+%d)\n",L2_hit_time);
 		m_execTime += L2_hit_time;
 		m_hitCount[Cache::CL_L2]++;
 	}
-	else
-	{
+	else {
 		PRINT("Add L2 miss time (+%d)\n",L2_miss_time);
 		m_execTime += L2_miss_time;
 
-		// Time for xfer from main mem to L2
 		PRINT("Bringing line into L2.\n");
 		PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
 
-		//Replay time
 		PRINT("Add L2 hit replay time (+%d)\n",L2_hit_time);
 		m_execTime += L2_hit_time;
 		m_missCount[Cache::CL_L2]++;
 		m_transfers[Cache::CL_L2]++;
 	}
 }
-void Results::AddExecInfoTime(uint32 execTime)
-{
+void Results::AddExecInfoTime(uint32 execTime){
 	m_execTime += execTime;
 }
-uint64 Results::GetExecTime()
-{
+uint64 Results::GetExecTime(){
 	return m_execTime;
 }
-
-
-
-

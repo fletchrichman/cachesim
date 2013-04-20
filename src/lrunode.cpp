@@ -1,45 +1,34 @@
-/*
- * lrunode.cpp
- *
- *  Created on: May 1, 2012
- *      Author: Tim
- */
-
+//Linked List implementation for LRU
 #include "lrunode.h"
+LruNode::LruNode(){}
 
-LruNode::LruNode()
-{
-	// Empty on purpose
+void LruNode::setWay(uint32 way){
+	m_way = way;
 }
 
-LruNode* LruNode::getNext()
-{
-	return m_next;
-}
-
-void LruNode::setNext(LruNode* next)
-{
-	m_next = next;
-}
-
-LruNode* LruNode::getPrev()
-{
-	return m_prev;
-}
-
-void LruNode::setPrev(LruNode* prev)
-{
-	m_prev = prev;
-}
-
-uint32 LruNode::getWay()
-{
+uint32 LruNode::getWay(){
 	return m_way;
 }
 
-void LruNode::setWay(uint32 way)
-{
-	m_way = way;
+void LruNode::setNext(LruNode* next){
+	m_next = next;
 }
+
+LruNode* LruNode::getNext(){
+	return m_next;
+}
+
+void LruNode::setPrev(LruNode* prev){
+	m_prev = prev;
+}
+
+LruNode* LruNode::getPrev(){
+	return m_prev;
+}
+
+
+
+
+
 
 

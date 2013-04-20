@@ -15,7 +15,6 @@ NumIndexBits:10
 NumTagBits:16
 NumBitsWordInBlock:4
 Status of printing: false
---------------------------------------------------------------------------
                          Simulation Results                               
 --------------------------------------------------------------------------
 Memory system:

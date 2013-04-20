@@ -1,13 +1,6 @@
-/*
- * main.cpp
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
-#include <iostream>
+//Main: Reads config, instantiates caches, starts simulation, writes results
 #include <cstdlib>
-
+#include <iostream>
 #include "config.h"
 #include "cache.h"
 #include "trace.h"
@@ -23,21 +16,18 @@
 #define L12WAYL24WAY 4
 #define L2BIG 5
 #define ALLFA 6
-
 #define INPUTTRACE "stdin"
 //#define INPUTTRACE "./long-trace/test.txt"
-inline const char * const BoolToString(bool b)
-{
-  return b ? "true" : "false";
-}
+
+inline const char * const BoolToString(bool b) { return b ? "true" : "false"; }
 extern bool printBool;
-int main(int argc, char **argv)
-{
+
+int main(int argc, char **argv){
 	int whichConfig=0;
 	uint64 tempTime=0;
 	whichConfig=atoi(argv[1]);
-	switch(whichConfig)
-	{
+	//Select configuration and read it
+	switch(whichConfig){
 		case BASE:
 			printf("Using Base Config\n");
 			Config::readConfigFile("./configs/parametersBase.conf");
@@ -71,45 +61,34 @@ int main(int argc, char **argv)
 			printf("Invalid Configuration File Number:%d\n",whichConfig);
 			break;
 	}
-/*
-	Cache* L1I = new DMCache(Cache::CL_L1I, L1_cache_size, L1_block_size);
-	Cache* L1D = new DMCache(Cache::CL_L1D, L1_cache_size, L1_block_size);
-
-	Cache* L2 = new DMCache(Cache::CL_L2, L2_cache_size, L2_block_size);
-	*/
+	//Create caches based on configuration
 	Cache* L1I = Cache::CreateCache(Cache::CL_L1I, L1_cache_size, L1_block_size, L1_assoc);
 	Cache* L1D = Cache::CreateCache(Cache::CL_L1D, L1_cache_size, L1_block_size, L1_assoc);
 	Cache* L2 = Cache::CreateCache(Cache::CL_L2, L2_cache_size, L2_block_size, L2_assoc);
 
+	//Open trace file & instantiate instruction and result vectors
 	Trace::OpenTraceFile(INPUTTRACE);
-
 	Instruction* instr = new Instruction();
 	Results* results = new Results();
-	if (argc < 2)
-	{
-		printBool=false;
-	}
-	else if(argv[2] != NULL)
-	{
+	
+	//Deal with command line arguments
+	if (argc < 2) printBool=false;
+	else if(argv[2] != NULL){
 		if (atoi(argv[2]) == 1) printBool=true;
 	}
-
 	printf("Status of printing: %s\n",BoolToString(printBool));
-
-	while (Trace::GetInstruction(instr, results) == 0)
-	{
+	
+	//Start simulation and keep running until end of trace file
+	while (Trace::GetInstruction(instr, results) == 0){
 		tempTime=results->GetExecTime();
-		if(printBool == true) Trace::PrintInstruction(instr);
+		if (printBool == true) Trace::PrintInstruction(instr);
 		Simulator::HandleInstruction(instr, L1I, L1D, L2, results);
 		tempTime=results->GetExecTime()-tempTime;
 		results->AddCycleCount(instr->GetOpcode(),tempTime);
-		if(printBool == true) printf("Simulated Time = %llu\n",results->GetExecTime());
+		if (printBool == true) printf("Simulated Time = %llu\n",results->GetExecTime());
 	}
-
+	//Save results vector to output file & exit
 	results->PrintResults();
-
-	//L1I->printCache();
-
 	return 0;
 }
 

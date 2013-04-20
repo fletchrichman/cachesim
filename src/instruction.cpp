@@ -1,44 +1,50 @@
-/*
- * instruction.cpp
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
+//Determine type of instruction and its details as it is fetched
 #include "instruction.h"
 
-char Instruction::opcodeSymbol[] =
-{
-	'L',
-	'S',
-	'B',
-	'C'
-};
-
-Instruction::opcode Instruction::GetOpcode()
-{
-	return m_opcode;
-}
-
-void Instruction::SetOpcode(opcode op)
-{
+char Instruction::opcodeSymbol[] = {'L','S','B','C'};
+void Instruction::SetOpcode(opcode op){
 	m_opcode = op;
 }
 
-uint32 Instruction::GetPc()
-{
-	return m_pc;
+Instruction::opcode Instruction::GetOpcode(){
+	return m_opcode;
 }
 
-void Instruction::SetPc(uint32 pc)
-{
+void Instruction::SetInstrNum(uint64 instrNum){
+	m_instrNum = instrNum;
+}
+
+uint64 Instruction::GetInstrNum(){
+	return m_instrNum;
+}
+
+void Instruction::SetPc(uint32 pc){
 	m_pc = pc;
 }
 
-uint32 Instruction::GetExecInfo()
-{
-	switch (m_opcode)
-	{
+uint32 Instruction::GetPc(){
+	return m_pc;
+}
+
+void Instruction::SetExecInfo(uint32 exInfo){
+	switch (m_opcode){
+		case O_Load:
+		case O_Store:
+			m_exInfo.ldstAddr = exInfo;
+			break;
+		case O_Branch:
+			m_exInfo.brTaken = exInfo;
+			break;
+		case O_Computation:
+			m_exInfo.compLatency = exInfo;
+			break;
+		default:
+			break;
+	}
+}
+
+uint32 Instruction::GetExecInfo(){
+	switch (m_opcode){
 		case O_Load:
 		case O_Store:
 			return m_exInfo.ldstAddr;
@@ -56,33 +62,8 @@ uint32 Instruction::GetExecInfo()
 	return 0;
 }
 
-void Instruction::SetExecInfo(uint32 exInfo)
-{
-	switch (m_opcode)
-	{
-		case O_Load:
-		case O_Store:
-			m_exInfo.ldstAddr = exInfo;
-			break;
-		case O_Branch:
-			m_exInfo.brTaken = exInfo;
-			break;
-		case O_Computation:
-			m_exInfo.compLatency = exInfo;
-			break;
-		default:
-			break;
-	}
-}
 
-uint64 Instruction::GetInstrNum()
-{
-	return m_instrNum;
-}
 
-void Instruction::SetInstrNum(uint64 instrNum)
-{
-	m_instrNum = instrNum;
-}
+
 
 
