@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/LRU.cpp \
 ../src/asscache.cpp \
 ../src/asscacheset.cpp \
 ../src/cache.cpp \
@@ -11,13 +12,13 @@ CPP_SRCS += \
 ../src/dmcache.cpp \
 ../src/dmcacheblock.cpp \
 ../src/instruction.cpp \
-../src/lrunode.cpp \
 ../src/main.cpp \
 ../src/results.cpp \
 ../src/simulator.cpp \
 ../src/trace.cpp 
 
 OBJS += \
+./src/LRU.o \
 ./src/asscache.o \
 ./src/asscacheset.o \
 ./src/cache.o \
@@ -25,13 +26,13 @@ OBJS += \
 ./src/dmcache.o \
 ./src/dmcacheblock.o \
 ./src/instruction.o \
-./src/lrunode.o \
 ./src/main.o \
 ./src/results.o \
 ./src/simulator.o \
 ./src/trace.o 
 
 CPP_DEPS += \
+./src/LRU.d \
 ./src/asscache.d \
 ./src/asscacheset.d \
 ./src/cache.d \
@@ -39,7 +40,6 @@ CPP_DEPS += \
 ./src/dmcache.d \
 ./src/dmcacheblock.d \
 ./src/instruction.d \
-./src/lrunode.d \
 ./src/main.d \
 ./src/results.d \
 ./src/simulator.d \

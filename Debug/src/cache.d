@@ -6,7 +6,7 @@ src/cache.d: ../src/cache.cpp \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/dmcacheblock.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscache.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscacheset.h \
- /home/user/Dropbox/Project/CacheSimulatorCPP/inc/lrunode.h
+ /home/user/Dropbox/Project/CacheSimulatorCPP/inc/LRU.h
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/cache.h:
 
@@ -22,4 +22,4 @@ src/cache.d: ../src/cache.cpp \
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscacheset.h:
 
-/home/user/Dropbox/Project/CacheSimulatorCPP/inc/lrunode.h:
+/home/user/Dropbox/Project/CacheSimulatorCPP/inc/LRU.h:

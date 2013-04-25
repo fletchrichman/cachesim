@@ -11,7 +11,7 @@ src/main.d: ../src/main.cpp \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/dmcacheblock.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscache.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscacheset.h \
- /home/user/Dropbox/Project/CacheSimulatorCPP/inc/lrunode.h \
+ /home/user/Dropbox/Project/CacheSimulatorCPP/inc/LRU.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/simulator.h
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/config.h:
@@ -38,6 +38,6 @@ src/main.d: ../src/main.cpp \
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscacheset.h:
 
-/home/user/Dropbox/Project/CacheSimulatorCPP/inc/lrunode.h:
+/home/user/Dropbox/Project/CacheSimulatorCPP/inc/LRU.h:
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/simulator.h:

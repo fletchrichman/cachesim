@@ -13,19 +13,19 @@ void AssCacheSet::Init(uint32 numWays){
 	m_dirtys  = new bool[numWays]();
 	m_tags    = new uint32[numWays];
 
-	m_lruNodeArray = new LruNode[numWays]();						// Create the lru list nodes
-	m_lruNodeArray[0].setPrev(NULL);								// Link the lru list nodes
+	m_LRUArray = new LRU[numWays]();						// Create the lru list nodes
+	m_LRUArray[0].setPrev(NULL);								// Link the lru list nodes
 	int i;
 	for (i = 0; i < numWays - 1; ++i){
-		m_lruNodeArray[i].setWay(i);
+		m_LRUArray[i].setWay(i);
 
-		m_lruNodeArray[i].setNext(&m_lruNodeArray[i+1]);
-		m_lruNodeArray[i+1].setPrev(&m_lruNodeArray[i]);
+		m_LRUArray[i].setNext(&m_LRUArray[i+1]);
+		m_LRUArray[i+1].setPrev(&m_LRUArray[i]);
 	}
-	m_lruNodeArray[numWays-1].setWay(numWays-1);
-	m_lruNodeArray[numWays-1].setNext(NULL);
-	m_mostRuNode = &m_lruNodeArray[0];								// List is in order of creation
-	m_leastRuNode = &m_lruNodeArray[numWays-1];
+	m_LRUArray[numWays-1].setWay(numWays-1);
+	m_LRUArray[numWays-1].setNext(NULL);
+	m_mostRuNode = &m_LRUArray[0];								// List is in order of creation
+	m_leastRuNode = &m_LRUArray[numWays-1];
 }
 
 bool AssCacheSet::getValid(uint32 way){
@@ -61,16 +61,16 @@ void AssCacheSet::updateLru(uint32 usedWay){
 		int x = 3;
 	}
 
-	LruNode* usedLruNode = &m_lruNodeArray[usedWay];
+	LRU* usedLRU = &m_LRUArray[usedWay];
 
-	if (usedLruNode == m_mostRuNode){								// If we just used the already MRU, nothing to do
+	if (usedLRU == m_mostRuNode){								// If we just used the already MRU, nothing to do
 		return;
 	}
 
-	LruNode* lruUsedNext = usedLruNode->getNext();					// Get the nodes directly before and after the one node of the found access
-	LruNode* lruUsedPrev = usedLruNode->getPrev();
+	LRU* lruUsedNext = usedLRU->getNext();					// Get the nodes directly before and after the one node of the found access
+	LRU* lruUsedPrev = usedLRU->getPrev();
 
-	if (usedLruNode == m_leastRuNode){
+	if (usedLRU == m_leastRuNode){
 		m_leastRuNode = lruUsedPrev;								// If used was LRU, LRU is now its previous
 	}
 
@@ -79,9 +79,9 @@ void AssCacheSet::updateLru(uint32 usedWay){
 		lruUsedNext->setPrev(lruUsedPrev);							// Remove the used node from the list
 	}
 	lruUsedPrev->setNext(lruUsedNext);
-	m_mostRuNode->setPrev(usedLruNode);								// Insert used to front of list
-	usedLruNode->setNext(m_mostRuNode);
-	usedLruNode->setPrev(NULL);
-	m_mostRuNode = usedLruNode;										// Used is now LRUs
+	m_mostRuNode->setPrev(usedLRU);								// Insert used to front of list
+	usedLRU->setNext(m_mostRuNode);
+	usedLRU->setPrev(NULL);
+	m_mostRuNode = usedLRU;										// Used is now LRUs
 }
 

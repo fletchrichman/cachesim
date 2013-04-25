@@ -8,7 +8,7 @@
 #ifndef ASSCACHESET_H_
 #define ASSCACHESET_H_
 
-#include "lrunode.h"
+#include "LRU.h"
 #include "types.h"
 
 class AssCacheSet
@@ -35,9 +35,9 @@ private:
 
 	uint32*  m_tags;
 
-	LruNode* m_leastRuNode;
-	LruNode* m_mostRuNode;
-	LruNode* m_lruNodeArray;
+	LRU* m_leastRuNode;
+	LRU* m_mostRuNode;
+	LRU* m_LRUArray;
 };
 
 

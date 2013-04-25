@@ -10,7 +10,7 @@
 
 #include "cache.h"
 #include "asscacheset.h"
-#include "lrunode.h"
+#include "LRU.h"
 
 class AssCache : public Cache
 {
