@@ -1,20 +1,11 @@
-/*
- * instruction.h
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
 #ifndef INSTRUCTION_H_
 #define INSTRUCTION_H_
 
 #include "types.h"
 
-class Instruction
-{
+class Instruction{
 public:
-	enum opcode
-	{
+	enum opcode {
 		O_MinimumValue = 0,
 		O_Load = 0,
 		O_Store,
@@ -24,8 +15,7 @@ public:
 		O_InvalidValue
 	};
 
-	typedef union
-	{
+	typedef union {
 		uint32 ldstAddr;
 		uint32 brTaken;
 		uint32 compLatency;
@@ -53,4 +43,4 @@ private:
 	uint64 m_instrNum;
 };
 
-#endif /* INSTRUCTION_H_ */
+#endif

@@ -9,8 +9,8 @@ src/main.d: ../src/main.cpp \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/results.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/DirectMap.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/DMBlock.h \
- /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscache.h \
- /home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscacheset.h \
+ /home/user/Dropbox/Project/CacheSimulatorCPP/inc/Associative.h \
+ /home/user/Dropbox/Project/CacheSimulatorCPP/inc/ASet.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/LRU.h \
  /home/user/Dropbox/Project/CacheSimulatorCPP/inc/simulator.h
 
@@ -34,9 +34,9 @@ src/main.d: ../src/main.cpp \
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/DMBlock.h:
 
-/home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscache.h:
+/home/user/Dropbox/Project/CacheSimulatorCPP/inc/Associative.h:
 
-/home/user/Dropbox/Project/CacheSimulatorCPP/inc/asscacheset.h:
+/home/user/Dropbox/Project/CacheSimulatorCPP/inc/ASet.h:
 
 /home/user/Dropbox/Project/CacheSimulatorCPP/inc/LRU.h:
 

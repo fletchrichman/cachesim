@@ -6,7 +6,7 @@
 #include "trace.h"
 #include "results.h"
 #include "DirectMap.h"
-#include "asscache.h"
+#include "Associative.h"
 #include "simulator.h"
 
 #define BASE 0

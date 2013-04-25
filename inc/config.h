@@ -1,13 +1,6 @@
-/*
- * config.h
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
 #ifndef CONFIG_H_
 #define CONFIG_H_
-
+#include <string>
 #include "types.h"
 
 //L1 cache configuration variables
@@ -32,17 +25,10 @@ extern uint32 mem_ready;
 extern uint32 mem_chunktime;
 extern uint32 mem_chunksize;
 
-//#define USE_STD_IN
-
-#include <string>
-
 using namespace std;
 
-class Config
-{
+class Config{
 public:
 	static bool readConfigFile(string filename);
 };
-
-
-#endif /* CONFIG_H_ */
+#endif

@@ -1,7 +1,7 @@
-#include "cache.h"
+#include "Cache.h"
 
 #include "DirectMap.h"
-#include "asscache.h"
+#include "Associative.h"
 
 Cache::Cache(cacheLevel level)
      : m_level(level),
@@ -16,7 +16,7 @@ Cache* Cache::CreateCache(cacheLevel level, uint32 cacheSize, uint32 blockSize, 
 		return new DirectMap(level, cacheSize, blockSize);
 	}
 	else{
-		return new AssCache(level, cacheSize, blockSize, assoc);
+		return new Associative(level, cacheSize, blockSize, assoc);
 	}
 }
 

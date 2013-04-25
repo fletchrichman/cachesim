@@ -4,11 +4,11 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/ASet.cpp \
+../src/Associative.cpp \
 ../src/DMBlock.cpp \
 ../src/DirectMap.cpp \
 ../src/LRU.cpp \
-../src/asscache.cpp \
-../src/asscacheset.cpp \
 ../src/cache.cpp \
 ../src/config.cpp \
 ../src/instruction.cpp \
@@ -18,11 +18,11 @@ CPP_SRCS += \
 ../src/trace.cpp 
 
 OBJS += \
+./src/ASet.o \
+./src/Associative.o \
 ./src/DMBlock.o \
 ./src/DirectMap.o \
 ./src/LRU.o \
-./src/asscache.o \
-./src/asscacheset.o \
 ./src/cache.o \
 ./src/config.o \
 ./src/instruction.o \
@@ -32,11 +32,11 @@ OBJS += \
 ./src/trace.o 
 
 CPP_DEPS += \
+./src/ASet.d \
+./src/Associative.d \
 ./src/DMBlock.d \
 ./src/DirectMap.d \
 ./src/LRU.d \
-./src/asscache.d \
-./src/asscacheset.d \
 ./src/cache.d \
 ./src/config.d \
 ./src/instruction.d \

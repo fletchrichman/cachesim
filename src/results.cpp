@@ -208,34 +208,33 @@ void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle){
 
 void Results::InstructionRef(Cache::checkRet L1Hit,Cache::eviction L1Evict,Cache::checkRet L2Hit,Cache::eviction L2Evict){
 	m_accessTotal[Cache::CL_L1I]++;
-	if (L1Hit == Cache::CR_HIT){ 			//Add L1i hit time
-		m_execTime += L1_hit_time;
-		m_hitCount[Cache::CL_L1I]++;
+	if (L1Hit == Cache::CR_HIT){ 			//L1I hit
+		m_execTime += L1_hit_time;			//Add L1I hit time
+		m_hitCount[Cache::CL_L1I]++;		//Increment L1I hit count
 	}
-	else if (L1Hit == Cache::CR_MISS){		//Add L1i miss time
-		m_execTime += L1_miss_time;
-		m_missCount[Cache::CL_L1I]++;
-		m_transfers[Cache::CL_L1I]++;
-		if (L1Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L1I]++;
-		m_accessTotal[Cache::CL_L2]++;
-		if (L2Hit == Cache::CR_HIT){		
+	else if (L1Hit == Cache::CR_MISS){		//L1I miss
+		m_execTime += L1_miss_time;			//Add L1I miss time
+		m_missCount[Cache::CL_L1I]++;		//Increment L1I miss count
+		m_transfers[Cache::CL_L1I]++;		//Increment L1I transgers
+		if (L1Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L1I]++; //Increment L1I kickouts
+		m_accessTotal[Cache::CL_L2]++;		//Increment Total Access
+		
+		if (L2Hit == Cache::CR_HIT){		//L2 hit
 			m_execTime += L2_hit_time;		//Add L2 hit time
-
-			//Transfer time L2 to L1
+											//Transfer time L2 to L1
 			m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;	
-			m_execTime += L1_hit_time;		//Add L1i hit time
+			m_execTime += L1_hit_time;		//Add L1I hit time
 			m_hitCount[Cache::CL_L2]++;		//Increment L2 hit count
 		}
-		else if (L2Hit == Cache::CR_MISS){
+		else if (L2Hit == Cache::CR_MISS){	//L2 miss
 			m_execTime += L2_miss_time;		//Add L2 miss time
 
-			//Transfer Time L2-->Memory
+											//Transfer Time L2-->Memory
 			m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
 			m_execTime += L2_hit_time;		//Add L2 hit time
 
-			//Transfer from l2 to l1
+											//Transfer from l2 to l1
 			m_execTime += ((L1_block_size / L2_bus_width) * L2_transfer_time);
-
 			m_execTime += L1_hit_time;		//Add L1i hit time
 			m_missCount[Cache::CL_L2]++;	//Increment miss counts
 			m_transfers[Cache::CL_L2]++;	//Increment transfers
@@ -244,12 +243,13 @@ void Results::InstructionRef(Cache::checkRet L1Hit,Cache::eviction L1Evict,Cache
 			else if (L2Evict == Cache::E_DIRTY){
 				m_kickouts[Cache::CL_L2]++;
 				m_dirtyKickouts[Cache::CL_L2]++;
-				m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
+				m_execTime += (mem_sendaddr + mem_ready + ((L2_block_size / mem_chunksize) * mem_chunktime));
 			}
 		}
 	}
 }
 
+//Handle L1D Eviction Results
 void Results::L1DEvict(Cache::eviction L1DEvict){
 	if (L1DEvict == Cache::E_CLEAN) m_kickouts[Cache::CL_L1D]++;
 	else if (L1DEvict == Cache::E_DIRTY){
@@ -260,15 +260,17 @@ void Results::L1DEvict(Cache::eviction L1DEvict){
 	}
 }
 
+//Handle L2 Eviction Results
 void Results::L2Evict(Cache::eviction L2Evict){
 	if (L2Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L2]++;
 	else if (L2Evict == Cache::E_DIRTY){
 		m_kickouts[Cache::CL_L2]++;
 		m_dirtyKickouts[Cache::CL_L2]++;
-		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
+		m_execTime += mem_sendaddr + mem_ready + ((L2_block_size / mem_chunksize) * mem_chunktime);
 	}
 }
 
+//Handle LD1 Results
 void Results::L1DRef(Cache::checkRet L1DHit){
 	m_accessTotal[Cache::CL_L1D]++;
 	if (L1DHit == Cache::CR_HIT){
@@ -284,6 +286,7 @@ void Results::L1DRef(Cache::checkRet L1DHit){
 	}
 }
 
+//Handle L2 Results
 void Results::L2Ref(Cache::checkRet L2Hit){
 	m_accessTotal[Cache::CL_L2]++;
 	if (L2Hit == Cache::CR_HIT){	//Add L2 hit time
@@ -292,16 +295,19 @@ void Results::L2Ref(Cache::checkRet L2Hit){
 	}
 	else {
 		m_execTime += L2_miss_time;
-		//Bring to L2 and add memory to L2 transfer time
-		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
+		m_execTime += mem_sendaddr + mem_ready + ((L2_block_size / mem_chunksize) * mem_chunktime);
 		m_execTime += L2_hit_time;		//Add L2 hit time
 		m_missCount[Cache::CL_L2]++;
 		m_transfers[Cache::CL_L2]++;
 	}
 }
+
+//Increment Execution Info
 void Results::AddExecInfoTime(uint32 execTime){
 	m_execTime += execTime;
 }
+
+//Get Execution Info
 uint64 Results::GetExecTime(){
 	return m_execTime;
 }
