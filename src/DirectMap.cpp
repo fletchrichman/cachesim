@@ -1,12 +1,12 @@
 //Direct Mapped Cache: Defines all needed functionality to manipulate the cache
-#include "dmcache.h"
+#include "DirectMap.h"
 #include <iostream>
 
 #define INDEXMASK 0xFFFFFFFF
 
 using namespace std;
 
-DMCache::DMCache(cacheLevel level, uint32 cacheSize, uint32 blockSize)
+DirectMap::DirectMap(cacheLevel level, uint32 cacheSize, uint32 blockSize)
 		:Cache(level){
 	cout << "Creating the DM Cache" << endl;
 
@@ -36,14 +36,14 @@ DMCache::DMCache(cacheLevel level, uint32 cacheSize, uint32 blockSize)
 	m_cache = new DMBlock[m_numBlocks];
 }
 
-uint32 DMCache::getTagFromReference(uint32 reference){
+uint32 DirectMap::getTagFromReference(uint32 reference){
 	uint32 tag = reference;											// Calculate tag of reference
 	tag = (tag >> (WORD_SIZE - m_numTagBits));
 
 	return tag;
 }
 
-uint32 DMCache::getIndexFromReference(uint32 reference){
+uint32 DirectMap::getIndexFromReference(uint32 reference){
 	uint32 index = reference;										// Calculate index of reference
 	uint32 mask = INDEXMASK;										// Shift to right to get number of bits
 	mask >>= (WORD_SIZE - m_numIndexBits);
@@ -54,7 +54,7 @@ uint32 DMCache::getIndexFromReference(uint32 reference){
 	return index;
 }
 
-Cache::checkRet DMCache::checkInCache(uint32 reference){
+Cache::checkRet DirectMap::checkInCache(uint32 reference){
 	uint32 index = getIndexFromReference(reference);
 	uint32 tag = getTagFromReference(reference);
 
@@ -70,7 +70,7 @@ Cache::checkRet DMCache::checkInCache(uint32 reference){
 	return ret;
 }
 
-Cache::eviction DMCache::checkAddRequiresEviction(uint32 reference){
+Cache::eviction DirectMap::checkAddRequiresEviction(uint32 reference){
 	uint32 index = getIndexFromReference(reference);
 
 	if (!m_cache[index].GetValid()){								// If block not yet valid, don't need to evict anything
@@ -87,14 +87,14 @@ Cache::eviction DMCache::checkAddRequiresEviction(uint32 reference){
 	}
 }
 
-uint32 DMCache::getAddressToEvict(uint32 reference){
+uint32 DirectMap::getAddressToEvict(uint32 reference){
 	uint32 index = getIndexFromReference(reference);
 	uint32 evictTag = m_cache[index].GetTag();
 
 	return reconstructAddress(evictTag, index);
 }
 
-void DMCache::addToCache(uint32 reference){
+void DirectMap::addToCache(uint32 reference){
 	uint32 index = getIndexFromReference(reference);
 	uint32 tag = getTagFromReference(reference);
 
@@ -103,12 +103,12 @@ void DMCache::addToCache(uint32 reference){
 	m_cache[index].SetDirty(false);
 }
 
-void DMCache::write(uint32 reference){
+void DirectMap::write(uint32 reference){
 	uint32 index = getIndexFromReference(reference);
 	m_cache[index].SetDirty(true);
 }
 
-uint32 DMCache::reconstructAddress(uint32 tag, uint32 index){
+uint32 DirectMap::reconstructAddress(uint32 tag, uint32 index){
 	uint32 addr = (tag << (WORD_SIZE - m_numTagBits)) |
 				  (index << (m_numBitsWordInBlock + m_numBitsByteInWord));
 
@@ -116,6 +116,6 @@ uint32 DMCache::reconstructAddress(uint32 tag, uint32 index){
 }
 
 
-void DMCache::printCache(){
+void DirectMap::printCache(){
 
 }

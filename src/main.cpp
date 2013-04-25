@@ -5,7 +5,7 @@
 #include "cache.h"
 #include "trace.h"
 #include "results.h"
-#include "dmcache.h"
+#include "DirectMap.h"
 #include "asscache.h"
 #include "simulator.h"
 

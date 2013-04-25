@@ -1,13 +1,13 @@
-#ifndef DMCACHE_H_
-#define DMCACHE_H_
+#ifndef DirectMap_H_
+#define DirectMap_H_
 
 #include "cache.h"
 #include "DMBlock.h"
 
-class DMCache : public Cache
+class DirectMap : public Cache
 {
 public:
-	DMCache(cacheLevel level, uint32 cacheSize, uint32 blockSize);
+	DirectMap(cacheLevel level, uint32 cacheSize, uint32 blockSize);
 
 	uint32 getTagFromReference(uint32 reference);
 	uint32 getIndexFromReference(uint32 reference);
@@ -28,4 +28,4 @@ private:
 
 
 
-#endif /* DMCACHE_H_ */
+#endif /* DirectMap_H_ */

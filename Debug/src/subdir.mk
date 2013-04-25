@@ -5,12 +5,12 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
 ../src/DMBlock.cpp \
+../src/DirectMap.cpp \
 ../src/LRU.cpp \
 ../src/asscache.cpp \
 ../src/asscacheset.cpp \
 ../src/cache.cpp \
 ../src/config.cpp \
-../src/dmcache.cpp \
 ../src/instruction.cpp \
 ../src/main.cpp \
 ../src/results.cpp \
@@ -19,12 +19,12 @@ CPP_SRCS += \
 
 OBJS += \
 ./src/DMBlock.o \
+./src/DirectMap.o \
 ./src/LRU.o \
 ./src/asscache.o \
 ./src/asscacheset.o \
 ./src/cache.o \
 ./src/config.o \
-./src/dmcache.o \
 ./src/instruction.o \
 ./src/main.o \
 ./src/results.o \
@@ -33,12 +33,12 @@ OBJS += \
 
 CPP_DEPS += \
 ./src/DMBlock.d \
+./src/DirectMap.d \
 ./src/LRU.d \
 ./src/asscache.d \
 ./src/asscacheset.d \
 ./src/cache.d \
 ./src/config.d \
-./src/dmcache.d \
 ./src/instruction.d \
 ./src/main.d \
 ./src/results.d \

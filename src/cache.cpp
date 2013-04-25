@@ -1,6 +1,6 @@
 #include "cache.h"
 
-#include "dmcache.h"
+#include "DirectMap.h"
 #include "asscache.h"
 
 Cache::Cache(cacheLevel level)
@@ -13,7 +13,7 @@ Cache::~Cache(){
 
 Cache* Cache::CreateCache(cacheLevel level, uint32 cacheSize, uint32 blockSize, uint32 assoc){
 	if (assoc == 1){
-		return new DMCache(level, cacheSize, blockSize);
+		return new DirectMap(level, cacheSize, blockSize);
 	}
 	else{
 		return new AssCache(level, cacheSize, blockSize, assoc);

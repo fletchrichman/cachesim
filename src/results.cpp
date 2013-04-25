@@ -4,13 +4,6 @@
 #include <stdio.h>
 #include <iostream>
 
-#define CPRINT
-#ifdef CPRINT
-#define PRINT(format,...) if(printBool) printf(format,##__VA_ARGS__)
-#else
-#define PRINT(format,...)
-#endif
-
 using namespace std;
 bool printBool=false;
 Results::Results()
@@ -251,9 +244,6 @@ void Results::InstructionRef(Cache::checkRet L1Hit,Cache::eviction L1Evict,Cache
 			else if (L2Evict == Cache::E_DIRTY){
 				m_kickouts[Cache::CL_L2]++;
 				m_dirtyKickouts[Cache::CL_L2]++;
-
-				PRINT("Bringing line into L2.\n");
-				PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 				m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
 			}
 		}
@@ -265,8 +255,6 @@ void Results::L1DEvict(Cache::eviction L1DEvict){
 	else if (L1DEvict == Cache::E_DIRTY){
 		m_kickouts[Cache::CL_L1D]++;
 		m_dirtyKickouts[Cache::CL_L1D]++;
-		PRINT("Bringing line into L1d.\n");
-		PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 		m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
 
 	}
@@ -277,8 +265,6 @@ void Results::L2Evict(Cache::eviction L2Evict){
 	else if (L2Evict == Cache::E_DIRTY){
 		m_kickouts[Cache::CL_L2]++;
 		m_dirtyKickouts[Cache::CL_L2]++;
-		PRINT("Bringing line into L2.\n");
-		PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
 	}
 }
@@ -286,20 +272,13 @@ void Results::L2Evict(Cache::eviction L2Evict){
 void Results::L1DRef(Cache::checkRet L1DHit){
 	m_accessTotal[Cache::CL_L1D]++;
 	if (L1DHit == Cache::CR_HIT){
-		PRINT("Add L1d hit time (+%d)\n",L1_hit_time);
 		m_execTime += L1_hit_time;
 		m_hitCount[Cache::CL_L1D]++;
 	}
 	else {
-		PRINT("Add L1d miss time (+%d)\n",L1_miss_time);
 		m_execTime += L1_miss_time;
-		PRINT("Bringing line into L1d.\n");
-		PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 		m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
-
-		PRINT("Add L1d hit replay time (+%d)\n",L1_hit_time);
 		m_execTime += L1_hit_time;
-
 		m_missCount[Cache::CL_L1D]++;
 		m_transfers[Cache::CL_L1D]++;
 	}
