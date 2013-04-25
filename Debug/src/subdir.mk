@@ -6,10 +6,10 @@
 CPP_SRCS += \
 ../src/ASet.cpp \
 ../src/Associative.cpp \
+../src/Cache.cpp \
 ../src/DMBlock.cpp \
 ../src/DirectMap.cpp \
 ../src/LRU.cpp \
-../src/cache.cpp \
 ../src/config.cpp \
 ../src/instruction.cpp \
 ../src/main.cpp \
@@ -20,10 +20,10 @@ CPP_SRCS += \
 OBJS += \
 ./src/ASet.o \
 ./src/Associative.o \
+./src/Cache.o \
 ./src/DMBlock.o \
 ./src/DirectMap.o \
 ./src/LRU.o \
-./src/cache.o \
 ./src/config.o \
 ./src/instruction.o \
 ./src/main.o \
@@ -34,10 +34,10 @@ OBJS += \
 CPP_DEPS += \
 ./src/ASet.d \
 ./src/Associative.d \
+./src/Cache.d \
 ./src/DMBlock.d \
 ./src/DirectMap.d \
 ./src/LRU.d \
-./src/cache.d \
 ./src/config.d \
 ./src/instruction.d \
 ./src/main.d \
@@ -50,7 +50,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -I"/home/user/Dropbox/Project/CacheSimulatorCPP/inc" -I"/home/user/Dropbox/Project/CacheSimulatorCPP/configs" -I"/home/user/Dropbox/Project/CacheSimulatorCPP/src/inih_r27/cpp" -I"/home/user/Dropbox/Project/CacheSimulatorCPP/src/inih_r27" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -I"/home/user/Dropbox/Project/CacheSim/inc" -I"/home/user/Dropbox/Project/CacheSim/src/inih_r27/cpp" -I"/home/user/Dropbox/Project/CacheSim/src/inih_r27" -I"/home/user/Dropbox/Project/CacheSim/src" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

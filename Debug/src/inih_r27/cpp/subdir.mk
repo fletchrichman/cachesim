@@ -17,7 +17,7 @@ CPP_DEPS += \
 src/inih_r27/cpp/%.o: ../src/inih_r27/cpp/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	g++ -I"/home/user/Dropbox/Project/CacheSimulatorCPP/inc" -I"/home/user/Dropbox/Project/CacheSimulatorCPP/configs" -I"/home/user/Dropbox/Project/CacheSimulatorCPP/src/inih_r27/cpp" -I"/home/user/Dropbox/Project/CacheSimulatorCPP/src/inih_r27" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	g++ -I"/home/user/Dropbox/Project/CacheSim/inc" -I"/home/user/Dropbox/Project/CacheSim/src/inih_r27/cpp" -I"/home/user/Dropbox/Project/CacheSim/src/inih_r27" -I"/home/user/Dropbox/Project/CacheSim/src" -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
