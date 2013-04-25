@@ -14,11 +14,7 @@
 using namespace std;
 bool printBool=false;
 Results::Results()
-		: m_numTotal(0), m_numLoad(0), m_numBranch(0), m_numStore(0), m_numComp(0),
-		  m_cycleTotal(0), m_cycleLoad(0), m_cycleBranch(0), m_cycleStore(0), m_cycleComp(0),
-		  m_execTime(0),
-		  m_instRefs(0), m_dataRefs(0)
-{
+		: m_numTotal(0), m_numLoad(0), m_numBranch(0), m_numStore(0), m_numComp(0), m_cycleTotal(0), m_cycleLoad(0), m_cycleBranch(0), m_cycleStore(0), m_cycleComp(0), m_execTime(0), m_instRefs(0), m_dataRefs(0){
 	for(int ii=0;ii<Cache::CL_NUMLEVELS;ii++){
 		m_transfers[ii]=0;
 		m_accessTotal[ii]=0;
@@ -93,24 +89,20 @@ void Results::PrintResults(){
 	printf("   Kickouts : %llu   Dirty Kickouts : %llu  Transfers : %llu\n",m_kickouts[Cache::CL_L2],m_dirtyKickouts[Cache::CL_L2],m_transfers[Cache::CL_L2]);
 	printf("\n");
 
-	//Initialize cost variables and calculate costs
+	//Initialize cost variables
 	uint32 numAssocDoubles=0;
 	uint64 L1Cost=0;
 	uint64 L2Cost=0;
 	uint64 totalCost=0;
 	
-	//L1 Costs
+	//Calculate Costs
 	while(L1_assoc>>=1) numAssocDoubles++;
 	L1Cost=(L1_cache_size/(4*1024))*(100+(100*numAssocDoubles));
 	totalCost+=2*L1Cost;
-	
-	//L2 Costs
 	numAssocDoubles=0;
 	while(L2_assoc>>=1) numAssocDoubles++;
 	L2Cost=(L2_cache_size/(64*1024))*(50+(50*numAssocDoubles));
 	totalCost+=L2Cost;
-	
-	//Memory Cost
 	uint32 latencyDouble=0;
 	uint32 bandwidthDouble=0;
 	uint64 temp;
@@ -174,10 +166,9 @@ void Results::PrintResults(){
 		 << "\tKickouts = " << m_kickouts[Cache::CL_L2]
 		 << "\tDirty Kickouts = " << m_dirtyKickouts[Cache::CL_L2]
 		 << "\tTransfers = " << m_transfers[Cache::CL_L2];
-	
-
 }
 
+//Keep track of number of each type of instruction processed
 void Results::ParsedInstruction(Instruction::opcode opcode){
 	m_numTotal++;
 	m_instRefs++;
@@ -201,6 +192,7 @@ void Results::ParsedInstruction(Instruction::opcode opcode){
 	}
 }
 
+//Keep track of number of operations
 void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle){
 	m_cycleTotal+=cycle;
 	switch(opcode){
@@ -223,58 +215,37 @@ void Results::AddCycleCount(Instruction::opcode opcode,uint64 cycle){
 
 void Results::InstructionRef(Cache::checkRet L1Hit,Cache::eviction L1Evict,Cache::checkRet L2Hit,Cache::eviction L2Evict){
 	m_accessTotal[Cache::CL_L1I]++;
-	if (L1Hit == Cache::CR_HIT){
-		PRINT("Add L1i hit time (+%d)\n",L1_hit_time);
+	if (L1Hit == Cache::CR_HIT){ 			//Add L1i hit time
 		m_execTime += L1_hit_time;
 		m_hitCount[Cache::CL_L1I]++;
 	}
-	else if (L1Hit == Cache::CR_MISS){
-		PRINT("Add L1i miss time (+%d)\n",L1_miss_time);
+	else if (L1Hit == Cache::CR_MISS){		//Add L1i miss time
 		m_execTime += L1_miss_time;
 		m_missCount[Cache::CL_L1I]++;
 		m_transfers[Cache::CL_L1I]++;
 		if (L1Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L1I]++;
 		m_accessTotal[Cache::CL_L2]++;
-		if (L2Hit == Cache::CR_HIT){
-			PRINT("Add L2 hit time (+%d)\n",L2_hit_time);
-			m_execTime += L2_hit_time;
+		if (L2Hit == Cache::CR_HIT){		
+			m_execTime += L2_hit_time;		//Add L2 hit time
 
-			//Transfer time L2-->L1
-			PRINT("Bringing line into L1i.\n");
-			PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
-			m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;
-
-			//Replay of L1
-			PRINT("Add L1i hit replay time (+%d)\n",L1_hit_time);
-			m_execTime += L1_hit_time;
-
-			m_hitCount[Cache::CL_L2]++;
+			//Transfer time L2 to L1
+			m_execTime += (L1_block_size / L2_bus_width) * L2_transfer_time;	
+			m_execTime += L1_hit_time;		//Add L1i hit time
+			m_hitCount[Cache::CL_L2]++;		//Increment L2 hit count
 		}
 		else if (L2Hit == Cache::CR_MISS){
-			//L2 Miss time
-			PRINT("Add L2 miss time (+%d)\n",L2_miss_time);
-			m_execTime += L2_miss_time;
+			m_execTime += L2_miss_time;		//Add L2 miss time
 
 			//Transfer Time L2-->Memory
-			PRINT("Bringing line into L2.\n");
-			PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
 			m_execTime += (mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime));
-
-			//Replay of L2
-			PRINT("Add L2 hit replay time (+%d)\n",L2_hit_time);
-			m_execTime += L2_hit_time;
+			m_execTime += L2_hit_time;		//Add L2 hit time
 
 			//Transfer from l2 to l1
-			PRINT("Bringing line into L1i.\n");
-			PRINT("Add L2 to L1 transfer time (+%d)\n",((L1_block_size / L2_bus_width) * L2_transfer_time));
 			m_execTime += ((L1_block_size / L2_bus_width) * L2_transfer_time);
 
-			//Replay Time L2
-			PRINT("Add L1i hit replay time (+%d)\n",L1_hit_time);
-			m_execTime += L1_hit_time;
-
-			m_missCount[Cache::CL_L2]++;
-			m_transfers[Cache::CL_L2]++;
+			m_execTime += L1_hit_time;		//Add L1i hit time
+			m_missCount[Cache::CL_L2]++;	//Increment miss counts
+			m_transfers[Cache::CL_L2]++;	//Increment transfers
 
 			if (L2Evict == Cache::E_CLEAN) m_kickouts[Cache::CL_L2]++;
 			else if (L2Evict == Cache::E_DIRTY){
@@ -336,21 +307,15 @@ void Results::L1DRef(Cache::checkRet L1DHit){
 
 void Results::L2Ref(Cache::checkRet L2Hit){
 	m_accessTotal[Cache::CL_L2]++;
-	if (L2Hit == Cache::CR_HIT){
-		PRINT("Add L2 hit time (+%d)\n",L2_hit_time);
+	if (L2Hit == Cache::CR_HIT){	//Add L2 hit time
 		m_execTime += L2_hit_time;
 		m_hitCount[Cache::CL_L2]++;
 	}
 	else {
-		PRINT("Add L2 miss time (+%d)\n",L2_miss_time);
 		m_execTime += L2_miss_time;
-
-		PRINT("Bringing line into L2.\n");
-		PRINT("Add memory to L2 transfer time (+%d)\n",(mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime)));
+		//Bring to L2 and add memory to L2 transfer time
 		m_execTime += mem_sendaddr + mem_ready + ( (L2_block_size / mem_chunksize) * mem_chunktime);
-
-		PRINT("Add L2 hit replay time (+%d)\n",L2_hit_time);
-		m_execTime += L2_hit_time;
+		m_execTime += L2_hit_time;		//Add L2 hit time
 		m_missCount[Cache::CL_L2]++;
 		m_transfers[Cache::CL_L2]++;
 	}

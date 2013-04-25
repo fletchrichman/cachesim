@@ -2,19 +2,6 @@
 #include <iostream>
 #include "simulator.h"
 
-#undef DEBUG
-#ifdef DEBUG
-#define PRINTACTION(output) (cout << output)
-#else
-#define PRINTACTION(output)
-#endif
-//#define CPRINT
-#ifdef CPRINT
-#define PRINT(format,...) printf(format,##__VA_ARGS__)
-#else
-#define PRINT(format,...)
-#endif
-
 using namespace std;
 void Simulator::HandleInstruction(Instruction* instr, Cache* L1I, Cache* L1D, Cache* L2, Results* results){
 	//INSTRUCTION FETCH============================================================================================
@@ -32,10 +19,10 @@ void Simulator::HandleInstruction(Instruction* instr, Cache* L1I, Cache* L1D, Ca
 			instrEvictL2 = L2->checkAddRequiresEviction(pc);//Check if we need to evict L2
 			L2->addToCache(pc);
 		}
-		else PRINTACTION(endl << "L2 Hit");					//L2 hit
+															//L2 hit
 		L1I->addToCache(pc);								//Add inst to L1 Instruction cache
 	}
-	else PRINTACTION(endl << "L1I Hit");					//L1I hit
+															//L1I hit
 	results->InstructionRef(instrHitL1, instrEvictL1, instrHitL2, instrEvictL2);
 	//END INSTRUCTION FETCH========================================================================================
 
@@ -63,7 +50,6 @@ void Simulator::HandleInstruction(Instruction* instr, Cache* L1I, Cache* L1D, Ca
 						dataEvictL2 = L2->checkAddRequiresEviction(evictAddrL1);  //Check if we need to evict from L2
 						if (dataEvictL2 != Cache::E_NOEVICT){					  
 							results->L2Evict(dataEvictL2);						  //Evict L2
-							if (dataEvictL2 != Cache::E_DIRTY) PRINTACTION(endl << "Dirty writeback from L2");
 						}
 						L2->addToCache(evictAddrL1);							  //Add to L2 cache
 						L2->write(evictAddrL1);									  //Write L1 evicted to L2
@@ -80,13 +66,11 @@ void Simulator::HandleInstruction(Instruction* instr, Cache* L1I, Cache* L1D, Ca
 					if (dataEvictL2 != Cache::E_NOEVICT) results->L2Evict(dataEvictL2);//Evict L2
 					L2->addToCache(addr);										  //Write new address to L2
 				}	
-				else PRINTACTION(endl << "L2 Hit");								  //L2 hit
-				
+																				  //L2 hit
 				results->L2Ref(dataHitL2);										  //Write to results vector
 				L1D->addToCache(addr);											  //Add address to L1D
 			}
-			else PRINTACTION(endl << "L1D Hit");								  //L1D hit
-
+																				  //L1D hit
 			if (instr->GetOpcode() == Instruction::O_Store) L1D->write(addr);	  //If inst is a store, write address to L1D
 			results->L1DRef(dataHitL1);											  //Write to results vector
 			break;
@@ -96,7 +80,6 @@ void Simulator::HandleInstruction(Instruction* instr, Cache* L1I, Cache* L1D, Ca
 		case Instruction::O_Branch:
 		case Instruction::O_Computation:
 		{
-			PRINT("Add exec time (+%d)\n",1);
 			results->AddExecInfoTime(instr->GetExecInfo());						  //Add execution time to results
 			break;
 		}
@@ -105,6 +88,3 @@ void Simulator::HandleInstruction(Instruction* instr, Cache* L1I, Cache* L1D, Ca
 
 	}
 }
-
-
-
