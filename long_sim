@@ -1,0 +1,5 @@
+#!/bin/sh
+#to run: long_sim <Trace> <config>
+#Configs: BASE 0 L12WAY 1 L22WAY 2 ALL2WAY 3 L12WAYL24WAY 4 L2BIG 5 ALLFA 6 
+
+zcat -d long-trace/$1 | Debug/CacheSim $2 $3 1>Results_New/L/$1_config_$2.txt
