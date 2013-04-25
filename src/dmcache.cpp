@@ -33,7 +33,7 @@ DMCache::DMCache(cacheLevel level, uint32 cacheSize, uint32 blockSize)
 	     << "NumTagBits:" << m_numTagBits << endl
 	     << "NumBitsWordInBlock:" << m_numBitsWordInBlock << endl;
 
-	m_cache = new DMCacheBlock[m_numBlocks];
+	m_cache = new DMBlock[m_numBlocks];
 }
 
 uint32 DMCache::getTagFromReference(uint32 reference){

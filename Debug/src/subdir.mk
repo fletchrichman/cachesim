@@ -4,13 +4,13 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/DMBlock.cpp \
 ../src/LRU.cpp \
 ../src/asscache.cpp \
 ../src/asscacheset.cpp \
 ../src/cache.cpp \
 ../src/config.cpp \
 ../src/dmcache.cpp \
-../src/dmcacheblock.cpp \
 ../src/instruction.cpp \
 ../src/main.cpp \
 ../src/results.cpp \
@@ -18,13 +18,13 @@ CPP_SRCS += \
 ../src/trace.cpp 
 
 OBJS += \
+./src/DMBlock.o \
 ./src/LRU.o \
 ./src/asscache.o \
 ./src/asscacheset.o \
 ./src/cache.o \
 ./src/config.o \
 ./src/dmcache.o \
-./src/dmcacheblock.o \
 ./src/instruction.o \
 ./src/main.o \
 ./src/results.o \
@@ -32,13 +32,13 @@ OBJS += \
 ./src/trace.o 
 
 CPP_DEPS += \
+./src/DMBlock.d \
 ./src/LRU.d \
 ./src/asscache.d \
 ./src/asscacheset.d \
 ./src/cache.d \
 ./src/config.d \
 ./src/dmcache.d \
-./src/dmcacheblock.d \
 ./src/instruction.d \
 ./src/main.d \
 ./src/results.d \

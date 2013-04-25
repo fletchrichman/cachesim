@@ -1,15 +1,8 @@
-/*
- * dmcache.h
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
 #ifndef DMCACHE_H_
 #define DMCACHE_H_
 
 #include "cache.h"
-#include "dmcacheblock.h"
+#include "DMBlock.h"
 
 class DMCache : public Cache
 {
@@ -29,7 +22,7 @@ public:
 private:
 	uint32 reconstructAddress(uint32 tag, uint32 index);
 
-	DMCacheBlock* m_cache;
+	DMBlock* m_cache;
 	uint32 m_numBlocks;
 };
 

@@ -1,19 +1,19 @@
 /*
- * dmcacheblock.h
+ * DMBlock.h
  *
  *  Created on: Apr 23, 2012
  *      Author: Tim
  */
 
-#ifndef DMCACHEBLOCK_H_
-#define DMCACHEBLOCK_H_
+#ifndef DMBlock_H_
+#define DMBlock_H_
 
 #include "types.h"
 
-class DMCacheBlock
+class DMBlock
 {
 public:
-	DMCacheBlock(bool valid = false, bool dirty = false, uint32 tag = 0);
+	DMBlock(bool valid = false, bool dirty = false, uint32 tag = 0);
 
 	bool GetValid();
 	void SetValid(bool valid);
@@ -31,4 +31,4 @@ private:
 
 
 
-#endif /* DMCACHEBLOCK_H_ */
+#endif /* DMBlock_H_ */
