@@ -1,10 +1,4 @@
-/*
- * config.cpp
- *
- *  Created on: Apr 23, 2012
- *      Author: Tim
- */
-
+//configure variables
 #include "config.h"
 
 #include <iostream>

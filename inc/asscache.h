@@ -1,6 +1,6 @@
 #ifndef ASSCACHE_H_
 #define ASSCACHE_H_
-#include "cache.h"
+#include "Cache.h"
 #include "ASet.h"
 #include "LRU.h"
 

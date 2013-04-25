@@ -1,8 +1,0 @@
-#!/bin/sh
-for file in I1 I2 I3 I4 I5 I10
-do
-	for config in 0 1 2 3 4 5 6
-	do
-		runsim $file $config 0
-	done
-done

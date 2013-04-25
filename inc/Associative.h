@@ -1,6 +1,6 @@
 #ifndef Associative_H_
 #define Associative_H_
-#include "cache.h"
+#include "Cache.h"
 #include "ASet.h"
 #include "LRU.h"
 

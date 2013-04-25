@@ -5,15 +5,16 @@
 class DMBlock{
 public:
 	DMBlock(bool valid = false, bool dirty = false, uint32 tag = 0);
-	bool GetValid();
-	void SetValid(bool valid);
 	bool GetDirty();
 	void SetDirty(bool dirty);
-	uint32 GetTag();
+	bool GetValid();
+	void SetValid(bool valid);
 	void SetTag(uint32 tag);
+	uint32 GetTag();
+
 private:
-	bool m_valid;
 	bool m_dirty;
+	bool m_valid;
 	uint32 m_tag;
 };
 #endif

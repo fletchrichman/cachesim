@@ -5,13 +5,14 @@
 
 class LRU {
 public:
+	LRU* getPrev();
+	void setPrev(LRU* prev);
 	LRU();
 	LRU* getNext();
 	void setNext(LRU* next);
-	LRU* getPrev();
-	void setPrev(LRU* prev);
 	uint32 getWay();
 	void setWay(uint32 way);
+	
 private:
 	LRU* m_next;
 	LRU* m_prev;

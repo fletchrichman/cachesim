@@ -3,7 +3,7 @@
 
 #include "instruction.h"
 #include "results.h"
-#include "cache.h"
+#include "Cache.h"
 
 class Simulator {
 public:

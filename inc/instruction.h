@@ -17,30 +17,27 @@ public:
 
 	typedef union {
 		uint32 ldstAddr;
-		uint32 brTaken;
 		uint32 compLatency;
+		uint32 brTaken;
+
 	} executionInfo;
 
-	static char opcodeSymbol[];
-
-	opcode GetOpcode();
-	void SetOpcode(opcode op);
-
-	uint32 GetPc();
-	void SetPc(uint32 pc);
-
-	uint32 GetExecInfo();
 	void SetExecInfo(uint32 exInfo);
-
 	uint64 GetInstrNum();
 	void SetInstrNum(uint64 instrNum);
+	static char opcodeSymbol[];
+	opcode GetOpcode();
+	void SetOpcode(opcode op);
+	uint32 GetPc();
+	void SetPc(uint32 pc);
+	uint32 GetExecInfo();
 
 
 private:
+	uint64 m_instrNum;
 	opcode m_opcode;
 	uint32 m_pc;
 	executionInfo m_exInfo;
-	uint64 m_instrNum;
 };
 
 #endif

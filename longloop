@@ -1,8 +1,0 @@
-#!/bin/sh
-for file in 176.gcc.gz.Z 175.vpr.gz.Z
-do
-	for config in 0 1 2 3 4 5 6
-	do
-		longrunsim $file $config 0
-	done
-done

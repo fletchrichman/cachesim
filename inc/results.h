@@ -1,20 +1,15 @@
 #ifndef RESULTS_H_
 #define RESULTS_H_
 
-#include "cache.h"
+#include "Cache.h"
 #include "instruction.h"
 
 class Results{
 public:
 	Results();
 	void PrintResults();
-
 	void ParsedInstruction(Instruction::opcode opcode);
-	void InstructionRef(Cache::checkRet L1Hit,
-						Cache::eviction L1Evict,
-						Cache::checkRet L2Hit,
-						Cache::eviction L2Evict);
-
+	void InstructionRef(Cache::checkRet L1Hit,Cache::eviction L1Evict,Cache::checkRet L2Hit,Cache::eviction L2Evict);
 	void L1DEvict(Cache::eviction L1DEvict);
 	void L2Evict(Cache::eviction L2Evict);
 	void L1DRef(Cache::checkRet L1DHit);
@@ -44,5 +39,4 @@ private:
 	uint64 m_dirtyKickouts[Cache::CL_NUMLEVELS];
 	uint64 m_transfers[Cache::CL_NUMLEVELS];
 };
-
 #endif

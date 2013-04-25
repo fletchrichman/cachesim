@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 #include "config.h"
-#include "cache.h"
+#include "Cache.h"
 #include "trace.h"
 #include "results.h"
 #include "DirectMap.h"
